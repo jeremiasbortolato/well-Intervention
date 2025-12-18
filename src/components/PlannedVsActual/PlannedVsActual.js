@@ -3,7 +3,15 @@ import PropTypes from 'prop-types';
 
 import styles from './PlannedVsActual.css';
 
-function PlannedVsActual({ title, statusText, metrics, deviationLabel, deviationValue }) {
+function PlannedVsActual({
+  title,
+  statusText,
+  metrics,
+  deviationLabel,
+  deviationValue,
+  operationalDeviationLabel,
+  operationalDeviationValue,
+}) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
@@ -23,9 +31,17 @@ function PlannedVsActual({ title, statusText, metrics, deviationLabel, deviation
         ))}
       </div>
 
-      <div className={styles.deviationCard}>
-        <span className={styles.metricLabel}>{deviationLabel}</span>
-        <span className={styles.warningChip}>{deviationValue}</span>
+      <div className={styles.deviationsRow}>
+        <div className={styles.deviationCard}>
+          <span className={styles.metricLabel}>{deviationLabel}</span>
+          <span className={styles.warningChip}>{deviationValue}</span>
+        </div>
+        {operationalDeviationLabel && operationalDeviationValue ? (
+          <div className={styles.deviationCard}>
+            <span className={styles.metricLabel}>{operationalDeviationLabel}</span>
+            <span className={styles.warningChip}>{operationalDeviationValue}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -43,6 +59,8 @@ PlannedVsActual.propTypes = {
   ).isRequired,
   deviationLabel: PropTypes.string.isRequired,
   deviationValue: PropTypes.string.isRequired,
+  operationalDeviationLabel: PropTypes.string,
+  operationalDeviationValue: PropTypes.string,
 };
 
 PlannedVsActual.defaultProps = {

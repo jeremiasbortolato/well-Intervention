@@ -362,6 +362,31 @@ function App() {
       return sum + duration;
     }, 0);
 
+    // Calculate NPT Total
+    const gestionableCodes = new Set(
+      NPT_CONSECUENCIAS.filter(c => c.tipo === 'Gestionable').map(c => String(Number(c.codigo)))
+    );
+    const noGestionableCodes = new Set(
+      NPT_CONSECUENCIAS.filter(c => c.tipo === 'No gestionable').map(c => String(Number(c.codigo)))
+    );
+
+    let gestionable = 0;
+    let noGestionable = 0;
+
+    nptData.forEach(rec => {
+      const codeRaw = rec?.data?.npt_consecuencia;
+      if (!codeRaw) return;
+      const code = String(Number(codeRaw));
+      const duration = rec?.data?.duration || 0;
+      if (gestionableCodes.has(code)) gestionable += duration;
+      if (noGestionableCodes.has(code)) noGestionable += duration;
+    });
+
+    const totalNpt = gestionable + noGestionable;
+
+    // Tiempo Real s/NPT = Tiempo Total Real - NPT Total
+    const actualTimeWithoutNpt = Math.max(0, actualTimeHours - totalNpt);
+
     // Calculate deviation percentage
     const deviation =
       plannedTimeHours > 0 ? ((actualTimeHours - plannedTimeHours) / plannedTimeHours) * 100 : 0;
@@ -369,15 +394,26 @@ function App() {
     const deviationSign = deviation >= 0 ? '+' : '';
     const deviationText = `${deviationSign} ${deviation.toFixed(1)} %`;
 
+    // Calculate operational deviation: Desvío Operativo = 1 - (Tiempo Real s/NPT / Tiempo Planificado) [%]
+    const operationalDeviation =
+      plannedTimeHours > 0
+        ? (1 - actualTimeWithoutNpt / plannedTimeHours) * 100
+        : 0;
+
+    const operationalDeviationSign = operationalDeviation >= 0 ? '+' : '';
+    const operationalDeviationText = `${operationalDeviationSign} ${operationalDeviation.toFixed(1)} %`;
+
     return {
       metrics: [
         { label: 'Well Planing Ultimo', value: lastReportNo },
         { label: 'Tiempo Planificado', value: plannedTimeHours.toFixed(1), unit: 'hs' },
         { label: 'Tiempo Total Real', value: actualTimeHours.toFixed(1), unit: 'hs' },
+        { label: 'Tiempo Real s/NPT', value: actualTimeWithoutNpt.toFixed(1), unit: 'hs' },
       ],
       deviation: deviationText,
+      operationalDeviation: operationalDeviationText,
     };
-  }, [wellPlanData, timelogData]);
+  }, [wellPlanData, timelogData, nptData]);
 
   // Calculate NPT Classification metrics
   const nptClassificationItems = useMemo(() => {
@@ -403,16 +439,33 @@ function App() {
 
     const totalNpt = gestionable + noGestionable;
 
-    // Calculate percentages
-    const gestionablePct = totalNpt > 0 ? ((gestionable / totalNpt) * 100).toFixed(1) : '0.0';
-    const noGestionablePct = totalNpt > 0 ? ((noGestionable / totalNpt) * 100).toFixed(1) : '0.0';
+    // Calculate TNP Total = Sum of data.duration for "sub_code_5": "TNP" in timelogData
+    const totalTnp = timelogData.reduce((sum, record) => {
+      const subCode5 = record?.data?.sub_code_5;
+      if (subCode5 === 'TNP') {
+        return sum + (record?.data?.duration || 0);
+      }
+      return sum;
+    }, 0);
+
+    // Calculate Tiempo Real s/NPT = Tiempo Total Real - NPT Total
+    const actualTimeHours = timelogData.reduce((sum, record) => {
+      const duration = record?.data?.duration ?? 0;
+      return sum + duration;
+    }, 0);
+    const actualTimeWithoutNpt = Math.max(0, actualTimeHours - totalNpt);
+
+    // Calculate Tiempo Operativo = Tiempo Real s/NPT - TNP Total
+    const tiempoOperativo = Math.max(0, actualTimeWithoutNpt - totalTnp);
 
     return [
-      { label: 'Gestionable', value: `${gestionablePct}%`, unit: 'del NPT' },
-      { label: 'No Gestionable', value: `${noGestionablePct}%`, unit: 'del NPT' },
+      { label: 'Gestionable', value: Number(gestionable).toFixed(1), unit: 'hs' },
+      { label: 'No Gestionable', value: Number(noGestionable).toFixed(1), unit: 'hs' },
       { label: 'NPT Total', value: `${totalNpt.toFixed(1)} hs`, isChip: true },
+      { label: 'TNP Total', value: `${totalTnp.toFixed(1)} hs`, isChip: true },
+      { label: 'Tiempo Operativo', value: tiempoOperativo.toFixed(1), unit: 'hs' },
     ];
-  }, [nptData]);
+  }, [nptData, timelogData]);
 
   // Calculate Operating Times data grouped by sub_code_5
   const operatingTimesData = useMemo(() => {
@@ -676,35 +729,36 @@ function App() {
           items={basicInfoItems}
         />
 
-        <div className={styles.mainRow}>
-          <div className={styles.leftColumn}>
-            <div className={styles.leftTop}>
-              <PlannedVsActual
-                title="Tiempo Planificado vs Real"
-                statusText={isLoadingPlannedVsActual ? 'Cargando...' : null}
-                metrics={
-                  isLoadingPlannedVsActual
-                    ? PLANNED_VS_ACTUAL_METRICS
-                    : plannedVsActualMetrics.metrics
-                }
-                deviationLabel="Desvío"
-                deviationValue={isLoadingPlannedVsActual ? '-' : plannedVsActualMetrics.deviation}
-              />
-            </div>
-            <div className={styles.leftBottom}>
-              <NptClassification
-                title="Clasificación de Tiempos No Productivos"
-                items={isLoadingPlannedVsActual ? NPT_ITEMS : nptClassificationItems}
-              />
-            </div>
-          </div>
-          <div className={styles.rightColumn}>
-            <OperatingTimesChart
-              title="Clasificación de Tiempos Operativos"
-              categories={operatingTimesData.categories}
-              values={operatingTimesData.values}
+        <div className={styles.metricsRow}>
+          <div className={styles.metricsColumn}>
+            <PlannedVsActual
+              title="Tiempo Planificado vs Real"
+              statusText={isLoadingPlannedVsActual ? 'Cargando...' : null}
+              metrics={
+                isLoadingPlannedVsActual ? PLANNED_VS_ACTUAL_METRICS : plannedVsActualMetrics.metrics
+              }
+              deviationLabel="Desvío"
+              deviationValue={isLoadingPlannedVsActual ? '-' : plannedVsActualMetrics.deviation}
+              operationalDeviationLabel="Desvío Operativo"
+              operationalDeviationValue={
+                isLoadingPlannedVsActual ? '-' : plannedVsActualMetrics.operationalDeviation
+              }
             />
           </div>
+          <div className={styles.metricsColumn}>
+            <NptClassification
+              title="Clasificación de Tiempos No Productivos"
+              items={isLoadingPlannedVsActual ? NPT_ITEMS : nptClassificationItems}
+            />
+          </div>
+        </div>
+
+        <div className={styles.operatingTimesRow}>
+          <OperatingTimesChart
+            title="Clasificación de Tiempos Operativos"
+            categories={operatingTimesData.categories}
+            values={operatingTimesData.values}
+          />
         </div>
 
         <div className={styles.secondaryRow}>

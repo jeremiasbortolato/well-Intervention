@@ -31,9 +31,11 @@ export const PLANNED_VS_ACTUAL_METRICS = [
 
 // Default NPT items (used while loading)
 export const NPT_ITEMS = [
-  { label: 'Gestionable', value: '-', unit: 'del NPT' },
-  { label: 'No Gestionable', value: '-', unit: 'del NPT' },
+  { label: 'Gestionable', value: '-', unit: 'hs' },
+  { label: 'No Gestionable', value: '-', unit: 'hs' },
   { label: 'NPT Total', value: '-', isChip: true },
+  { label: 'TNP Total', value: '-', isChip: true },
+  { label: 'Tiempo Operativo', value: '-', unit: 'hs' },
 ];
 
 // NPT consequence codes for classification

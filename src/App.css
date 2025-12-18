@@ -14,32 +14,32 @@
   justify-content: flex-start;
 }
 
-.mainRow {
+.metricsRow {
   display: flex;
   gap: 12px;
   align-items: stretch;
+  min-height: auto;
+}
+
+.metricsColumn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.metricsColumn:first-child {
+  flex: 1.2;
+}
+
+.operatingTimesRow {
+  width: 100%;
   min-height: 375px;
 }
 
-.leftColumn {
-  flex: 1;
-  max-width: 36%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.leftTop {
-  flex: 7;
-}
-
-.leftBottom {
-  flex: 3;
-}
-
-.rightColumn {
-  flex: 2;
-  min-width: 0;
+@media (max-width: 1100px) {
+  .metricsRow {
+    flex-direction: column;
+  }
 }
 
 .secondaryRow {
