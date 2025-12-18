@@ -1,0 +1,33 @@
+.card {
+  width: 100%;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.link {
+  color: #03bcd4;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.chart {
+  width: 100%;
+  flex: 1 1 auto;
+}

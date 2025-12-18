@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+.nx/cache/
+
+# Logs
+.nx/workspace-data/
+*.log
+
+# enviroment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Others
+.DS_Store
+dist/
+build/
+coverage/

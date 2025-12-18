@@ -1,0 +1,44 @@
+.card {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.tableContainer {
+  max-height: calc(100% - 32px);
+}
+
+.headerRow {
+  border-bottom: 1px solid #616161;
+}
+
+.headerCell {
+  color: #bdbdbd !important;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: none !important;
+}
+
+.bodyRow:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cell {
+  color: #ffffff;
+  font-size: 14px;
+  border-bottom: 1px solid #616161 !important;
+}
+
+.diffChip {
+  font-size: 12px;
+}

@@ -1,0 +1,107 @@
+.card {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.topRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  color: #bdbdbd;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.chipGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tests {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.testRow {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+}
+
+.costCard {
+  background: rgba(255, 67, 54, 0.04);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.costTitle {
+  color: #ff938b;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.costList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.costRow,
+.costRowTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.costValue {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.totalLabel {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.totalValue {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 24px;
+}

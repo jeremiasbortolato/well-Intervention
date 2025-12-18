@@ -1,0 +1,85 @@
+.card {
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.metricsRow {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.metricCard {
+  flex: 1 1 0;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metricLabel {
+  color: #bdbdbd;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.valueRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.value {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.unit {
+  color: #9e9e9e;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.deviationCard {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.warningChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 6px 8px;
+  background: rgba(255, 193, 7, 0.16);
+  color: #ffc107;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 16px;
+}

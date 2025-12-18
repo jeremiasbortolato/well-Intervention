@@ -1,0 +1,82 @@
+.card {
+  width: 100%;
+  padding: 12px;
+  background: #272727;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 375px;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.block {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 150px;
+}
+
+.blockHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorBar {
+  width: 2px;
+  height: 16px;
+  border-radius: 1px;
+}
+
+.blockLabel {
+  color: #bdbdbd;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.blockValueRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.value {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.unit {
+  color: #9e9e9e;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.comment {
+  color: #bdbdbd;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.commentLabel {
+  color: #bdbdbd;
+}
+
+.commentText {
+  color: #ffffff;
+}

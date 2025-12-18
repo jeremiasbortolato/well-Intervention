@@ -1,0 +1,89 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: #1b1b1b;
+  height: 100vh;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.topRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.mainRow {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 375px;
+}
+
+.leftColumn {
+  flex: 1;
+  max-width: 36%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leftTop {
+  flex: 7;
+}
+
+.leftBottom {
+  flex: 3;
+}
+
+.rightColumn {
+  flex: 2;
+  min-width: 0;
+}
+
+.secondaryRow {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 375px;
+}
+
+.secondaryLeft {
+  flex: 0.45;
+}
+
+.secondaryRight {
+  flex: 0.55;
+  min-width: 0;
+}
+
+.tertiaryRow {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 375px;
+}
+
+.tertiaryLeft {
+  flex: 0.45;
+}
+
+.tertiaryRight {
+  flex: 0.55;
+  min-width: 0;
+}
+
+.curveChartRow {
+  width: 100%;
+  min-height: 600px;
+}
+
+.errorMessage {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 67, 54, 0.12);
+  color: #ff938b;
+  font-size: 14px;
+}
