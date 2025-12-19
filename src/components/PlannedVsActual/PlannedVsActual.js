@@ -9,9 +9,21 @@ function PlannedVsActual({
   metrics,
   deviationLabel,
   deviationValue,
+  deviationNumeric,
   operationalDeviationLabel,
   operationalDeviationValue,
+  operationalDeviationNumeric,
 }) {
+  const getDeviationChipClass = (value) => {
+    if (value <= 0) {
+      return styles.deviationChipGreen;
+    } else if (value > 0 && value <= 10) {
+      return styles.deviationChipYellow;
+    } else {
+      return styles.deviationChipRed;
+    }
+  };
+
   return (
     <div className={styles.card}>
       <div className={styles.header}>
@@ -34,12 +46,28 @@ function PlannedVsActual({
       <div className={styles.deviationsRow}>
         <div className={styles.deviationCard}>
           <span className={styles.metricLabel}>{deviationLabel}</span>
-          <span className={styles.warningChip}>{deviationValue}</span>
+          <span
+            className={
+              deviationNumeric !== undefined
+                ? getDeviationChipClass(deviationNumeric)
+                : styles.warningChip
+            }
+          >
+            {deviationValue}
+          </span>
         </div>
         {operationalDeviationLabel && operationalDeviationValue ? (
           <div className={styles.deviationCard}>
             <span className={styles.metricLabel}>{operationalDeviationLabel}</span>
-            <span className={styles.warningChip}>{operationalDeviationValue}</span>
+            <span
+              className={
+                operationalDeviationNumeric !== undefined
+                  ? getDeviationChipClass(operationalDeviationNumeric)
+                  : styles.warningChip
+              }
+            >
+              {operationalDeviationValue}
+            </span>
           </div>
         ) : null}
       </div>
@@ -59,8 +87,10 @@ PlannedVsActual.propTypes = {
   ).isRequired,
   deviationLabel: PropTypes.string.isRequired,
   deviationValue: PropTypes.string.isRequired,
+  deviationNumeric: PropTypes.number,
   operationalDeviationLabel: PropTypes.string,
   operationalDeviationValue: PropTypes.string,
+  operationalDeviationNumeric: PropTypes.number,
 };
 
 PlannedVsActual.defaultProps = {

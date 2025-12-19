@@ -11,6 +11,7 @@ import OperatingTimesChart from './components/OperatingTimesChart/OperatingTimes
 import LostTimeTreemap from './components/LostTimeTreemap/LostTimeTreemap';
 import TopDeviationCauses from './components/TopDeviationCauses/TopDeviationCauses';
 import OperationalSummary from './components/OperationalSummary/OperationalSummary';
+import { NonQualityCostCard } from './components/OperationalSummary/OperationalSummary';
 import PerformanceComparison from './components/PerformanceComparison/PerformanceComparison';
 import InterventionCurveChart from './components/InterventionCurveChart';
 import {
@@ -397,7 +398,7 @@ function App() {
     // Calculate operational deviation: Desvío Operativo = 1 - (Tiempo Real s/NPT / Tiempo Planificado) [%]
     const operationalDeviation =
       plannedTimeHours > 0
-        ? (1 - actualTimeWithoutNpt / plannedTimeHours) * 100
+        ? ( (actualTimeWithoutNpt / plannedTimeHours)-1) * 100
         : 0;
 
     const operationalDeviationSign = operationalDeviation >= 0 ? '+' : '';
@@ -411,7 +412,9 @@ function App() {
         { label: 'Tiempo Real s/NPT', value: actualTimeWithoutNpt.toFixed(1), unit: 'hs' },
       ],
       deviation: deviationText,
+      deviationNumeric: deviation,
       operationalDeviation: operationalDeviationText,
+      operationalDeviationNumeric: operationalDeviation,
     };
   }, [wellPlanData, timelogData, nptData]);
 
@@ -459,10 +462,20 @@ function App() {
     const tiempoOperativo = Math.max(0, actualTimeWithoutNpt - totalTnp);
 
     return [
-      { label: 'Gestionable', value: Number(gestionable).toFixed(1), unit: 'hs' },
+      {
+        label: 'Gestionable',
+        value: `${Number(gestionable).toFixed(1)} hs`,
+        isChip: true,
+        numericValue: gestionable,
+      },
       { label: 'No Gestionable', value: Number(noGestionable).toFixed(1), unit: 'hs' },
-      { label: 'NPT Total', value: `${totalNpt.toFixed(1)} hs`, isChip: true },
-      { label: 'TNP Total', value: `${totalTnp.toFixed(1)} hs`, isChip: true },
+      { label: 'NPT Total', value: Number(totalNpt).toFixed(1), unit: 'hs' },
+      {
+        label: 'TNP Total',
+        value: `${totalTnp.toFixed(1)} hs`,
+        isChip: true,
+        numericValue: totalTnp,
+      },
       { label: 'Tiempo Operativo', value: tiempoOperativo.toFixed(1), unit: 'hs' },
     ];
   }, [nptData, timelogData]);
@@ -739,9 +752,17 @@ function App() {
               }
               deviationLabel="Desvío"
               deviationValue={isLoadingPlannedVsActual ? '-' : plannedVsActualMetrics.deviation}
+              deviationNumeric={
+                isLoadingPlannedVsActual ? undefined : plannedVsActualMetrics.deviationNumeric
+              }
               operationalDeviationLabel="Desvío Operativo"
               operationalDeviationValue={
                 isLoadingPlannedVsActual ? '-' : plannedVsActualMetrics.operationalDeviation
+              }
+              operationalDeviationNumeric={
+                isLoadingPlannedVsActual
+                  ? undefined
+                  : plannedVsActualMetrics.operationalDeviationNumeric
               }
             />
           </div>
@@ -749,8 +770,21 @@ function App() {
             <NptClassification
               title="Clasificación de Tiempos No Productivos"
               items={isLoadingPlannedVsActual ? NPT_ITEMS : nptClassificationItems}
+              plannedTimeHours={
+                isLoadingPlannedVsActual
+                  ? undefined
+                  : wellPlanData[0]?.data?.estimated_duration ?? 0
+              }
             />
           </div>
+        </div>
+
+        <div className={styles.nonQualityCostRow}>
+          <NonQualityCostCard
+            costTitle="Costo de No Calidad"
+            costs={OPERATIONAL_SUMMARY.costs}
+            totalCost={OPERATIONAL_SUMMARY.totalCost}
+          />
         </div>
 
         <div className={styles.operatingTimesRow}>
@@ -784,6 +818,7 @@ function App() {
               costTitle="Costo de No Calidad"
               costs={OPERATIONAL_SUMMARY.costs}
               totalCost={OPERATIONAL_SUMMARY.totalCost}
+              showCostCard={false}
             />
           </div>
           <div className={styles.tertiaryRight}>

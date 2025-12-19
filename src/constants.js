@@ -31,9 +31,9 @@ export const PLANNED_VS_ACTUAL_METRICS = [
 
 // Default NPT items (used while loading)
 export const NPT_ITEMS = [
-  { label: 'Gestionable', value: '-', unit: 'hs' },
+  { label: 'Gestionable', value: '-', isChip: true },
   { label: 'No Gestionable', value: '-', unit: 'hs' },
-  { label: 'NPT Total', value: '-', isChip: true },
+  { label: 'NPT Total', value: '-', unit: 'hs' },
   { label: 'TNP Total', value: '-', isChip: true },
   { label: 'Tiempo Operativo', value: '-', unit: 'hs' },
 ];

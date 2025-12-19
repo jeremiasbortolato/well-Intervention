@@ -4,6 +4,26 @@ import { Checkbox, Chip } from '@corva/ui/componentsV2';
 
 import styles from './OperationalSummary.css';
 
+export function NonQualityCostCard({ costTitle, costs, totalCost }) {
+  return (
+    <div className={styles.costCard}>
+      <div className={styles.costTitle}>{costTitle}</div>
+      <div className={styles.costList}>
+        {costs.map((item) => (
+          <div className={styles.costRow} key={item.label}>
+            <span className={styles.label}>{item.label}</span>
+            <span className={styles.costValue}>{item.value}</span>
+          </div>
+        ))}
+      </div>
+      <div className={styles.costRowTotal}>
+        <span className={styles.totalLabel}>Total:</span>
+        <span className={styles.totalValue}>{totalCost}</span>
+      </div>
+    </div>
+  );
+}
+
 function OperationalSummary({
   title,
   unscrews,
@@ -13,6 +33,7 @@ function OperationalSummary({
   costs,
   totalCost,
   height,
+  showCostCard,
 }) {
   return (
     <div className={styles.card} style={{ height }}>
@@ -57,24 +78,23 @@ function OperationalSummary({
         ))}
       </div>
 
-      <div className={styles.costCard}>
-        <div className={styles.costTitle}>{costTitle}</div>
-        <div className={styles.costList}>
-          {costs.map((item) => (
-            <div className={styles.costRow} key={item.label}>
-              <span className={styles.label}>{item.label}</span>
-              <span className={styles.costValue}>{item.value}</span>
-            </div>
-          ))}
-        </div>
-        <div className={styles.costRowTotal}>
-          <span className={styles.totalLabel}>Total:</span>
-          <span className={styles.totalValue}>{totalCost}</span>
-        </div>
-      </div>
+      {showCostCard ? (
+        <NonQualityCostCard costTitle={costTitle} costs={costs} totalCost={totalCost} />
+      ) : null}
     </div>
   );
 }
+
+NonQualityCostCard.propTypes = {
+  costTitle: PropTypes.string.isRequired,
+  costs: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  totalCost: PropTypes.string.isRequired,
+};
 
 OperationalSummary.propTypes = {
   title: PropTypes.string.isRequired,
@@ -105,10 +125,12 @@ OperationalSummary.propTypes = {
   ).isRequired,
   totalCost: PropTypes.string.isRequired,
   height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  showCostCard: PropTypes.bool,
 };
 
 OperationalSummary.defaultProps = {
   height: 500,
+  showCostCard: true,
 };
 
 export default OperationalSummary;

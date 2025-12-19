@@ -21,6 +21,10 @@
   min-height: auto;
 }
 
+.nonQualityCostRow {
+  width: 100%;
+}
+
 .metricsColumn {
   flex: 1;
   min-width: 0;
