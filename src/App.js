@@ -21,6 +21,7 @@ import {
   fetchWellPlanData,
   fetchTimelogData,
   fetchNptEvents,
+  getNoCalidadCosts,
 } from './api/intervention';
 import {
   INTERVENTION_OPTIONS,
@@ -55,6 +56,8 @@ function App() {
   const [nptData, setNptData] = useState([]);
   const [isLoadingPlannedVsActual, setIsLoadingPlannedVsActual] = useState(false);
   const [activeWellDetails, setActiveWellDetails] = useState(null);
+  const [qualityCosts, setQualityCosts] = useState(null);
+  const [isLoadingCosts, setIsLoadingCosts] = useState(false);
 
   useEffect(() => {
     const interventionUnitId = interventionUnit?.id;
@@ -330,6 +333,47 @@ function App() {
     };
   }, [assetId, eventId]);
 
+  // Calculate quality costs (Costo de No Calidad) when data is loaded
+  useEffect(() => {
+    if (!assetId || !eventId || !well?.id || isLoadingPlannedVsActual) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const calculateCosts = async () => {
+      setIsLoadingCosts(true);
+      try {
+        const costs = await getNoCalidadCosts({
+          assetId,
+          eventId,
+          wellId: well.id,
+          companyId: INTERVENTION_COMPANY_ID,
+          provider: INTERVENTION_TYPE_PROVIDER,
+          dataset: INTERVENTION_TYPE_DATASET,
+          nptConsequences: NPT_CONSECUENCIAS,
+        });
+
+        if (isMounted) {
+          setQualityCosts(costs);
+          setIsLoadingCosts(false);
+        }
+      } catch (error) {
+        console.error('Error calculating quality costs:', error);
+        if (isMounted) {
+          setQualityCosts(null);
+          setIsLoadingCosts(false);
+        }
+      }
+    };
+
+    calculateCosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId, eventId, well?.id, isLoadingPlannedVsActual]);
+
   const interventionType = useMemo(() => {
     if (eventsForWell.length) {
       return getInterventionDisplayName(selectedEvent?.operation);
@@ -348,6 +392,41 @@ function App() {
     isLoadingTypeGoals,
     getInterventionDisplayName,
   ]);
+
+  // Format quality costs for UI display
+  const formattedQualityCosts = useMemo(() => {
+    if (!qualityCosts || isLoadingCosts) {
+      return {
+        costs: OPERATIONAL_SUMMARY.costs,
+        totalCost: OPERATIONAL_SUMMARY.totalCost,
+      };
+    }
+
+    const formatCurrency = (value) => {
+      if (!value && value !== 0) return '-';
+      // Format with 2 decimal places, no thousands separator (matches KPIs app format)
+      return `$ ${Number(value).toFixed(2)}`;
+    };
+
+    const costs = [
+      {
+        label: 'Costo Desvio Operativo:',
+        value: formatCurrency(qualityCosts.costoDesvioOperativo),
+      },
+      {
+        label: 'Costo Desvio NPT Gestionable:',
+        value: formatCurrency(qualityCosts.costoDesvioNPTGestionable),
+      },
+      {
+        label: 'Costo Desvio Prod. Diferida:',
+        value: formatCurrency(qualityCosts.costoDesvioProdDiferida),
+      },
+    ];
+
+    const totalCost = formatCurrency(qualityCosts.costoTotal);
+
+    return { costs, totalCost };
+  }, [qualityCosts, isLoadingCosts]);
 
   // Calculate Planned vs Actual metrics
   const plannedVsActualMetrics = useMemo(() => {
@@ -782,8 +861,8 @@ function App() {
         <div className={styles.nonQualityCostRow}>
           <NonQualityCostCard
             costTitle="Costo de No Calidad"
-            costs={OPERATIONAL_SUMMARY.costs}
-            totalCost={OPERATIONAL_SUMMARY.totalCost}
+            costs={formattedQualityCosts.costs}
+            totalCost={formattedQualityCosts.totalCost}
           />
         </div>
 
@@ -816,8 +895,8 @@ function App() {
               dragLevels={OPERATIONAL_SUMMARY.dragLevels}
               tests={OPERATIONAL_SUMMARY.tests}
               costTitle="Costo de No Calidad"
-              costs={OPERATIONAL_SUMMARY.costs}
-              totalCost={OPERATIONAL_SUMMARY.totalCost}
+              costs={formattedQualityCosts.costs}
+              totalCost={formattedQualityCosts.totalCost}
               showCostCard={false}
             />
           </div>
