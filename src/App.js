@@ -22,6 +22,9 @@ import {
   fetchTimelogData,
   fetchNptEvents,
   getNoCalidadCosts,
+  getNPTByConsequence,
+  getTNPByOpSubcode,
+  getOperationalLostTime,
 } from './api/intervention';
 import {
   INTERVENTION_OPTIONS,
@@ -58,6 +61,12 @@ function App() {
   const [activeWellDetails, setActiveWellDetails] = useState(null);
   const [qualityCosts, setQualityCosts] = useState(null);
   const [isLoadingCosts, setIsLoadingCosts] = useState(false);
+  const [nptByConsequence, setNptByConsequence] = useState([]);
+  const [isLoadingNptConsequence, setIsLoadingNptConsequence] = useState(false);
+  const [tnpByOpSubcode, setTnpByOpSubcode] = useState([]);
+  const [isLoadingTnpSubcode, setIsLoadingTnpSubcode] = useState(false);
+  const [operationalLostTime, setOperationalLostTime] = useState([]);
+  const [isLoadingOperationalLostTime, setIsLoadingOperationalLostTime] = useState(false);
 
   useEffect(() => {
     const interventionUnitId = interventionUnit?.id;
@@ -373,6 +382,136 @@ function App() {
       isMounted = false;
     };
   }, [assetId, eventId, well?.id, isLoadingPlannedVsActual]);
+
+  // Load NPT by Consequence data (for treemap)
+  useEffect(() => {
+    if (!assetId || !eventId || isLoadingPlannedVsActual) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadNPTConsequence = async () => {
+      setIsLoadingNptConsequence(true);
+      try {
+        const data = await getNPTByConsequence({
+          assetId,
+          eventId,
+          nptConsequences: NPT_CONSECUENCIAS,
+          topN: 5,
+        });
+
+        if (isMounted) {
+          setNptByConsequence(data);
+          setIsLoadingNptConsequence(false);
+        }
+      } catch (error) {
+        console.error('Error loading NPT by consequence:', error);
+        if (isMounted) {
+          setNptByConsequence([]);
+          setIsLoadingNptConsequence(false);
+        }
+      }
+    };
+
+    loadNPTConsequence();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId, eventId, isLoadingPlannedVsActual]);
+
+  // Load TNP by Op Subcode data (for treemap)
+  useEffect(() => {
+    if (!assetId || !eventId || isLoadingPlannedVsActual) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadTNPSubcode = async () => {
+      setIsLoadingTnpSubcode(true);
+      try {
+        const data = await getTNPByOpSubcode({
+          assetId,
+          eventId,
+          topN: 5,
+        });
+
+        if (isMounted) {
+          setTnpByOpSubcode(data);
+          setIsLoadingTnpSubcode(false);
+        }
+      } catch (error) {
+        console.error('Error loading TNP by op_subcode:', error);
+        if (isMounted) {
+          setTnpByOpSubcode([]);
+          setIsLoadingTnpSubcode(false);
+        }
+      }
+    };
+
+    loadTNPSubcode();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId, eventId, isLoadingPlannedVsActual]);
+
+  // Load Operational Lost Time data (for treemap)
+  useEffect(() => {
+    if (!assetId || !timelogData.length) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadOperationalLostTime = async () => {
+      setIsLoadingOperationalLostTime(true);
+      try {
+        // Calculate start and end time from timelog data
+        let minStart = null;
+        let maxEnd = null;
+
+        timelogData.forEach((row) => {
+          const start = row?.data?.start_time;
+          const end = row?.data?.end_time;
+
+          if (typeof start === 'number' && Number.isFinite(start)) {
+            minStart = minStart == null ? start : Math.min(minStart, start);
+          }
+
+          if (typeof end === 'number' && Number.isFinite(end)) {
+            maxEnd = maxEnd == null ? end : Math.max(maxEnd, end);
+          }
+        });
+
+        const data = await getOperationalLostTime({
+          assetId,
+          startTime: minStart,
+          endTime: maxEnd,
+          topN: 5,
+        });
+
+        if (isMounted) {
+          setOperationalLostTime(data);
+          setIsLoadingOperationalLostTime(false);
+        }
+      } catch (error) {
+        console.error('Error loading operational lost time:', error);
+        if (isMounted) {
+          setOperationalLostTime([]);
+          setIsLoadingOperationalLostTime(false);
+        }
+      }
+    };
+
+    loadOperationalLostTime();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId, timelogData]);
 
   const interventionType = useMemo(() => {
     if (eventsForWell.length) {
@@ -874,13 +1013,33 @@ function App() {
           />
         </div>
 
+        <div className={styles.lostTimeTripleRow}>
+          <div className={styles.lostTimeTripleColumn}>
+            <LostTimeTreemap
+              title="Tiempo perdido por NPT Consecuencia (top 5)"
+              linkLabel="See All"
+              data={isLoadingNptConsequence ? [] : nptByConsequence}
+            />
+          </div>
+          <div className={styles.lostTimeTripleColumn}>
+            <LostTimeTreemap
+              title="Tiempo perdido por TNP (top 5)"
+              linkLabel="See All"
+              data={isLoadingTnpSubcode ? [] : tnpByOpSubcode}
+            />
+          </div>
+          <div className={styles.lostTimeTripleColumn}>
+            <LostTimeTreemap
+              title="Tiempo perdido Operativo (top 5)"
+              linkLabel="See All"
+              data={isLoadingOperationalLostTime ? [] : operationalLostTime}
+            />
+          </div>
+        </div>
+
         <div className={styles.secondaryRow}>
           <div className={styles.secondaryLeft}>
-            <LostTimeTreemap
-              title="Tiempo Perdido por Causa"
-              linkLabel="See All"
-              data={LOST_TIME_DATA}
-            />
+              //TODO: TOP 5 CAUSAS DE DESVÍO
           </div>
           <div className={styles.secondaryRight}>
             <TopDeviationCauses title="Top 5 Causas de Desvío" blocks={TOP_CAUSES_BLOCKS} />

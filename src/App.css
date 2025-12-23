@@ -4,7 +4,13 @@
   gap: 16px;
   padding: 16px;
   background: #1b1b1b;
-  height: 100vh;
+  /* El scroll lo maneja el Content real de AppContainer (ver :global abajo) */
+}
+
+/* AppContainer (Corva UI) usa un contenedor de contenido con altura acotada (debajo del header).
+   Si intentamos scrollear el window, muchas veces no funciona en DevCenter/iframes.
+   Por eso forzamos el scroll aquí, con un selector estable por data-testid. */
+:global([data-testid="CorvaUI.AppContainer.ContentTestId"]) {
   min-height: 0;
   overflow-y: auto;
 }
@@ -51,6 +57,20 @@
   gap: 12px;
   align-items: stretch;
   min-height: 375px;
+}
+
+.lostTimeTripleRow {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 375px;
+  width: 100%;
+}
+
+.lostTimeTripleColumn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
 }
 
 .secondaryLeft {
