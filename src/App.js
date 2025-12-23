@@ -1037,6 +1037,23 @@ function App() {
           </div>
         </div>
 
+        {/* Curva Plana de la Intervención */}
+        <div className={styles.curveChartRow}>
+          <InterventionCurveChart
+            title="Curva Plana de la Intervención con Desvíos"
+            plan={interventionCurveData.plan}
+            real={interventionCurveData.real}
+            realWONPT={interventionCurveData.realWONPT}
+            forecast={interventionCurveData.forecast}
+            forecastWONPT={interventionCurveData.forecastWONPT}
+            nptTotal={interventionCurveData.nptTotal}
+            desvioOperativo={interventionCurveData.desvioOperativo}
+            desvioProyectado={interventionCurveData.desvioProyectado}
+            isLoading={isLoadingPlannedVsActual}
+            height={550}
+          />
+        </div>
+
         <div className={styles.secondaryRow}>
           <div className={styles.secondaryLeft}>
               //TODO: TOP 5 CAUSAS DE DESVÍO
@@ -1065,23 +1082,6 @@ function App() {
               rows={PERFORMANCE_ROWS}
             />
           </div>
-        </div>
-
-        {/* Curva Plana de la Intervención */}
-        <div className={styles.curveChartRow}>
-          <InterventionCurveChart
-            title="Curva Plana de la Intervención con Desvíos"
-            plan={interventionCurveData.plan}
-            real={interventionCurveData.real}
-            realWONPT={interventionCurveData.realWONPT}
-            forecast={interventionCurveData.forecast}
-            forecastWONPT={interventionCurveData.forecastWONPT}
-            nptTotal={interventionCurveData.nptTotal}
-            desvioOperativo={interventionCurveData.desvioOperativo}
-            desvioProyectado={interventionCurveData.desvioProyectado}
-            isLoading={isLoadingPlannedVsActual}
-            height={550}
-          />
         </div>
 
         {eventsError ? (
