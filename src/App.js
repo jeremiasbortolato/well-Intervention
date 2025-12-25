@@ -698,29 +698,78 @@ function App() {
     ];
   }, [nptData, timelogData]);
 
-  // Calculate Operating Times data grouped by sub_code_5
   const operatingTimesData = useMemo(() => {
-    // Group durations by sub_code_5
-    const groupedByCode = {};
+    const plannedTimeHours = wellPlanData[0]?.data?.estimated_duration ?? 0;
 
-    timelogData.forEach(rec => {
-      const code = rec?.data?.sub_code_5;
-      if (!code) return;
+    const actualTimeHours = timelogData.reduce((sum, record) => {
+      const duration = record?.data?.duration ?? 0;
+      return sum + duration;
+    }, 0);
+
+    // TNP Total = Sum of timelog durations where sub_code_5 === 'TNP'
+    const tnpTotal = timelogData.reduce((sum, record) => {
+      const subCode5 = record?.data?.sub_code_5;
+      if (subCode5 === 'TNP') {
+        return sum + (record?.data?.duration || 0);
+      }
+      return sum;
+    }, 0);
+
+    // NPT Gestionable / No Gestionable (desde nptData + NPT_CONSECUENCIAS)
+    const gestionableCodes = new Set(
+      NPT_CONSECUENCIAS.filter(c => c.tipo === 'Gestionable').map(c => String(Number(c.codigo)))
+    );
+    const noGestionableCodes = new Set(
+      NPT_CONSECUENCIAS.filter(c => c.tipo === 'No gestionable').map(c => String(Number(c.codigo)))
+    );
+
+    let nptGestionable = 0;
+    let nptNoGestionable = 0;
+
+    nptData.forEach(rec => {
+      const codeRaw = rec?.data?.npt_consecuencia;
+      if (!codeRaw) return;
+      const code = String(Number(codeRaw));
       const duration = rec?.data?.duration || 0;
-      groupedByCode[code] = (groupedByCode[code] || 0) + duration;
+      if (gestionableCodes.has(code)) nptGestionable += duration;
+      if (noGestionableCodes.has(code)) nptNoGestionable += duration;
     });
 
-    // Convert to arrays for the chart
-    const entries = Object.entries(groupedByCode);
+    // PE = Tiempo_Operativo = Tiempo_Total_Real - TNP_Total - NPT_Total
+    const tiempoOperativo = Math.max(0, actualTimeHours - tnpTotal - nptGestionable - nptNoGestionable);
 
-    // Sort by duration descending for better visualization
-    entries.sort((a, b) => b[1] - a[1]);
+    const pct = (value) => (actualTimeHours > 0 ? (value / actualTimeHours) * 100 : 0);
 
-    const categories = entries.map(([code]) => code);
-    const values = entries.map(([, duration]) => Number(duration.toFixed(1)));
+    const planPercent = pct(plannedTimeHours);
+    // "Desvío total / Over Planned" = NO planificado 
+    const overPlanPercent = Math.max(0, 100 - planPercent);
 
-    return { categories, values };
-  }, [timelogData]);
+    return {
+      planPercent,
+      overPlanPercent,
+      items: [
+        {
+          key: 'pe',
+          label: 'PE',
+          percent: pct(tiempoOperativo),
+          color: 'var(--icon-info-light, #7CC5FF)',
+        },
+        { key: 'tnp', label: 'TNP', percent: pct(tnpTotal), color: 'rgba(128, 133, 233, 1)' },
+        {
+          key: 'nptGestionable',
+          label: 'NPT Gestionable',
+          percent: pct(nptGestionable),
+          color: 'var(--icon-success-light, #88DA8B)',
+        },
+        {
+          key: 'nptNoGestionable',
+          label: 'NPT No Gestionable',
+          percent: pct(nptNoGestionable),
+          color: 'var(--icon-danger-light, #F56565)',
+        },
+      ],
+    };
+  }, [wellPlanData, timelogData, nptData]);
 
   // Calculate Intervention Curve Chart data (Curva Plana)
   const interventionCurveData = useMemo(() => {
@@ -997,19 +1046,20 @@ function App() {
           </div>
         </div>
 
+        <div className={styles.operatingTimesRow}>
+          <OperatingTimesChart
+            title="Plan / Actual"
+            planPercent={operatingTimesData.planPercent}
+            overPlanPercent={operatingTimesData.overPlanPercent}
+            items={operatingTimesData.items}
+          />
+        </div>
+
         <div className={styles.nonQualityCostRow}>
           <NonQualityCostCard
             costTitle="Costo de No Calidad"
             costs={formattedQualityCosts.costs}
             totalCost={formattedQualityCosts.totalCost}
-          />
-        </div>
-
-        <div className={styles.operatingTimesRow}>
-          <OperatingTimesChart
-            title="Clasificación de Tiempos Operativos"
-            categories={operatingTimesData.categories}
-            values={operatingTimesData.values}
           />
         </div>
 
