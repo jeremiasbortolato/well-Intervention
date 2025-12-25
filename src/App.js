@@ -9,11 +9,11 @@ import PlannedVsActual from './components/PlannedVsActual/PlannedVsActual';
 import NptClassification from './components/NptClassification/NptClassification';
 import OperatingTimesChart from './components/OperatingTimesChart/OperatingTimesChart';
 import LostTimeTreemap from './components/LostTimeTreemap/LostTimeTreemap';
-import TopDeviationCauses from './components/TopDeviationCauses/TopDeviationCauses';
 import OperationalSummary from './components/OperationalSummary/OperationalSummary';
 import { NonQualityCostCard } from './components/OperationalSummary/OperationalSummary';
 import PerformanceComparison from './components/PerformanceComparison/PerformanceComparison';
 import InterventionCurveChart from './components/InterventionCurveChart';
+import PressureTestsSection from './components/PressureTestsSection/PressureTestsSection';
 import {
   fetchInterventionUnitEvents,
   fetchInterventionUnitWithActiveWell,
@@ -33,7 +33,6 @@ import {
   NPT_ITEMS,
   NPT_CONSECUENCIAS,
   LOST_TIME_DATA,
-  TOP_CAUSES_BLOCKS,
   OPERATIONAL_SUMMARY,
   PERFORMANCE_ROWS,
   INTERVENTION_TYPE_PROVIDER,
@@ -1104,15 +1103,6 @@ function App() {
           />
         </div>
 
-        <div className={styles.secondaryRow}>
-          <div className={styles.secondaryLeft}>
-              //TODO: TOP 5 CAUSAS DE DESVÍO
-          </div>
-          <div className={styles.secondaryRight}>
-            <TopDeviationCauses title="Top 5 Causas de Desvío" blocks={TOP_CAUSES_BLOCKS} />
-          </div>
-        </div>
-
         <div className={styles.tertiaryRow}>
           <div className={styles.tertiaryLeft}>
             <OperationalSummary
@@ -1132,6 +1122,13 @@ function App() {
               rows={PERFORMANCE_ROWS}
             />
           </div>
+        </div>
+
+        <div className={styles.pressureTestsRow}>
+          <PressureTestsSection
+            assetId={assetId}
+            title="Pressure Tests - Último Test Guardado"
+          />
         </div>
 
         {eventsError ? (

@@ -1,0 +1,91 @@
+.container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--white-w4, rgba(255, 255, 255, 0.04));
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  color: white;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  line-height: 22px;
+  word-wrap: break-word;
+  margin: 0;
+}
+
+.testCard {
+  background: var(--white-w4, rgba(255, 255, 255, 0.04));
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.liveCard {
+  border-color: var(--icon-accent, #03BCD4);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.testTitle {
+  color: white;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  line-height: 22px;
+  word-wrap: break-word;
+  margin: 0;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.testInfo {
+  margin-bottom: 12px;
+}
+
+.testInfo p {
+  margin: 4px 0;
+}
+
+.label {
+  color: #BDBDBD;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  line-height: 22px;
+  word-wrap: break-word;
+}
+
+.value {
+  color: white;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  line-height: 22px;
+  word-wrap: break-word;
+}
+
+

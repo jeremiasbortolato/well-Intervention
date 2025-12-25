@@ -1,0 +1,19 @@
+.container {
+  width: 100%;
+  height: 100%;
+  background: var(--white-w4, rgba(255, 255, 255, 0.04));
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #ccc;
+}
+

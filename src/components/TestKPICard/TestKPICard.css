@@ -1,0 +1,104 @@
+.kpisContainer {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.kpiBox {
+  flex: 1 1 0;
+  min-width: 60px;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  height: auto;
+}
+
+.kpiValue {
+  font-size: 14px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  line-height: 20px;
+  word-wrap: break-word;
+  color: white;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.kpiLabel {
+  margin-top: -2px;
+  font-size: 11px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  line-height: 14px;
+  word-wrap: break-word;
+  color: #bdbdbd;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.positiveTest {
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.positiveTest .kpiValue {
+  color: var(--palette-success-main);
+}
+
+.negativeTest {
+  background: rgba(255, 67, 54, 0.08);
+}
+
+.negativeTest .kpiValue {
+  color: var(--palette-error-main);
+}
+
+.maxPressureBox {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.maxPressureBox .kpiValue {
+  color: white;
+}
+
+.cyclesBox {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cyclesBox .kpiValue {
+  color: white;
+}
+
+@media (max-width: 250px) {
+  .kpiBox {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+
+  .kpisContainer {
+    gap: 8px;
+  }
+
+  .kpiValue {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .kpiLabel {
+    font-size: 10px;
+    line-height: 12px;
+  }
+}
+

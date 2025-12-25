@@ -139,56 +139,6 @@ export const LOST_TIME_DATA = [
   { name: 'SP MPDE (2 hs)', value: 2 },
 ];
 
-export const TOP_CAUSES_BLOCKS = [
-  {
-    label: 'Total Tiempo Perdido',
-    value: 74,
-    unit: 'hs',
-    comment:
-      'SACA INSTALACION DE VARILLA (CON CARBONATO) - NOTA: SE OBSERVA BOMBA CON BARRIL DAÑADO',
-  },
-  {
-    label: 'Espera de Herramientas',
-    value: 32.4,
-    unit: '% del total',
-    comment:
-      'SACA INSTALACION DE VARILLA (CON CARBONATO) - NOTA: SE OBSERVA BOMBA CON BARRIL DAÑADO',
-    color: '#FF4D4F',
-  },
-  {
-    label: 'Problemas Mecánicos',
-    value: 20.3,
-    unit: '% del total',
-    comment:
-      'SACA INSTALACION DE VARILLA (CON CARBONATO) - NOTA: SE OBSERVA BOMBA CON BARRIL DAÑADO',
-    color: '#FBBF24',
-  },
-  {
-    label: 'Problemas Mecánicos',
-    value: 16.2,
-    unit: '% del total',
-    comment:
-      'SACA INSTALACION DE VARILLA (CON CARBONATO) - NOTA: SE OBSERVA BOMBA CON BARRIL DAÑADO',
-    color: '#FBBF24',
-  },
-  {
-    label: 'Falla de Equipamiento',
-    value: 24.3,
-    unit: '% del total',
-    comment:
-      'SACA INSTALACION DE VARILLA (CON CARBONATO) - NOTA: SE OBSERVA BOMBA CON BARRIL DAÑADO',
-    color: '#3BA7FF',
-  },
-  {
-    label: 'Otros',
-    value: 6.8,
-    unit: '% del total',
-    comment:
-      'SACA INSTALACION DE VARILLA (CON CARBONATO) - NOTA: SE OBSERVA BOMBA CON BARRIL DAÑADO',
-    color: '#9CA3AF',
-  },
-];
-
 export const OPERATIONAL_SUMMARY = {
   unscrews: 42,
   dragLevels: [
