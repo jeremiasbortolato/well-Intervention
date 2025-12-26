@@ -679,7 +679,7 @@ export async function getNPTByConsequence({ assetId, eventId, nptConsequences, t
  * @param {string} params.provider
  * @param {string} params.dataset
  * @param {Array} params.nptConsequences
- * @returns {Promise<{costoDesvioOperativo: number, costoDesvioNPTGestionable: number, costoDesvioProdDiferida: number, costoTotal: number, error: string|null}>}
+ * @returns {Promise<{costoDesvioOperativo: number, costoDesvioNPTGestionable: number, costoDesvioProdDiferida: number, costoTotal: number, hasPlanProductionData: boolean, error: string|null}>}
  */
 export async function getNoCalidadCosts({
   assetId,
@@ -737,13 +737,15 @@ export async function getNoCalidadCosts({
     }
 
     // 9. Calculate Costo Total
-    const costoTotal = costoDesvioOperativo + costoDesvioNPTGestionable + costoDesvioProdDiferida;
+    // NOTE: "Costo Desvio Prod. Diferida" is shown separately and should NOT be included in totals.
+    const costoTotal = costoDesvioOperativo + costoDesvioNPTGestionable;
 
     return {
       costoDesvioOperativo,
       costoDesvioNPTGestionable,
       costoDesvioProdDiferida,
       costoTotal,
+      hasPlanProductionData,
       error: null,
     };
   } catch (error) {
@@ -753,6 +755,7 @@ export async function getNoCalidadCosts({
       costoDesvioNPTGestionable: 0,
       costoDesvioProdDiferida: 0,
       costoTotal: 0,
+      hasPlanProductionData: false,
       error: error.message || 'Error calculating costs',
     };
   }

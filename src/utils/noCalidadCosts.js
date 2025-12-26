@@ -127,18 +127,23 @@ export function buildNoCalidadCostsUI({
     costoDesvioProdDiferida = horasAfectadas * Number(costoBarril) * productionRate;
   }
 
-  const costoTotal = costoDesvioOperativo + costoDesvioNPTGestionable + costoDesvioProdDiferida;
+  // NOTE: "Costo Desvio Prod. Diferida" is shown separately and should NOT be included in totals.
+  const costoTotal = costoDesvioOperativo + costoDesvioNPTGestionable;
 
   const costs = [
     { label: 'Costo Desvio Operativo:', value: formatUsd(costoDesvioOperativo) },
     { label: 'Costo Desvio NPT Gestionable:', value: formatUsd(costoDesvioNPTGestionable) },
-    { label: 'Costo Desvio Prod. Diferida:', value: formatUsd(costoDesvioProdDiferida) },
-    { label: 'Costo de No Calidad:', value: formatUsd(costoTotal) },
   ];
 
   return {
     costs,
     totalCost: formatUsd(costoTotal),
+    postTotalCosts: [
+      {
+        label: 'Costo Desvio Prod. Diferida:',
+        value: hasPlanProductionData ? formatUsd(costoDesvioProdDiferida) : '-',
+      },
+    ],
     debug: {
       interventionType,
       desvioOperativoTotal,

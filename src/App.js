@@ -536,6 +536,7 @@ function App() {
     if (!qualityCosts || isLoadingCosts) {
       return {
         costs: OPERATIONAL_SUMMARY.costs,
+        postTotalCosts: OPERATIONAL_SUMMARY.postTotalCosts || [],
         totalCost: OPERATIONAL_SUMMARY.totalCost,
       };
     }
@@ -546,6 +547,12 @@ function App() {
       return `$ ${Number(value).toFixed(2)}`;
     };
 
+    const deferredValue = (() => {
+      // If we don't have Production data, show "-" (even if numeric value is 0.00)
+      if (!qualityCosts?.hasPlanProductionData) return '-';
+      return formatCurrency(qualityCosts.costoDesvioProdDiferida);
+    })();
+
     const costs = [
       {
         label: 'Costo Desvio Operativo:',
@@ -555,15 +562,18 @@ function App() {
         label: 'Costo Desvio NPT Gestionable:',
         value: formatCurrency(qualityCosts.costoDesvioNPTGestionable),
       },
-      {
-        label: 'Costo Desvio Prod. Diferida:',
-        value: formatCurrency(qualityCosts.costoDesvioProdDiferida),
-      },
     ];
 
     const totalCost = formatCurrency(qualityCosts.costoTotal);
 
-    return { costs, totalCost };
+    const postTotalCosts = [
+      {
+        label: 'Costo Desvio Prod. Diferida:',
+        value: deferredValue,
+      },
+    ];
+
+    return { costs, postTotalCosts, totalCost };
   }, [qualityCosts, isLoadingCosts]);
 
   // Calculate Planned vs Actual metrics
@@ -1058,6 +1068,7 @@ function App() {
           <NonQualityCostCard
             costTitle="Costo de No Calidad"
             costs={formattedQualityCosts.costs}
+            postTotalCosts={formattedQualityCosts.postTotalCosts}
             totalCost={formattedQualityCosts.totalCost}
           />
         </div>
@@ -1112,6 +1123,7 @@ function App() {
               tests={OPERATIONAL_SUMMARY.tests}
               costTitle="Costo de No Calidad"
               costs={formattedQualityCosts.costs}
+              postTotalCosts={formattedQualityCosts.postTotalCosts}
               totalCost={formattedQualityCosts.totalCost}
               showCostCard={false}
             />

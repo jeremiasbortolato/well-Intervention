@@ -154,10 +154,10 @@ export const OPERATIONAL_SUMMARY = {
   costs: [
     { label: 'Costo Desvio Operativo:', value: '$ 2,400' },
     { label: 'Costo Desvio NPT Gestionable:', value: '$ 2,400' },
-    { label: 'Costo Desvio Prod. Diferida:', value: '$ 2,400' },
-    { label: 'Costo de No Calidad:', value: '$ 2,400' },
   ],
-  totalCost: '$ 9,600',
+  // Total excludes "Costo Desvio Prod. Diferida"
+  totalCost: '$ 4,800',
+  postTotalCosts: [{ label: 'Costo Desvio Prod. Diferida:', value: '$ 2,400' }],
 };
 
 export const PERFORMANCE_ROWS = [
