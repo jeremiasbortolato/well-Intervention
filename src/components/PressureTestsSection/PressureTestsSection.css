@@ -27,15 +27,21 @@
 
 .contentArea {
   display: flex;
-  flex: 0.66;
+  flex: 0.65;
   overflow: hidden;
   gap: 16px;
+  min-height: 350px;
+  max-height: 500px;
 }
 
-.pressureChartArea {
-  flex: 0.34;
-  min-height: 180px;
-  margin-top: 16px;
+.testCardWrapper {
+  flex: 0.4;
+  min-width: 300px;
+}
+
+.chartWrapper {
+  flex: 0.6;
+  min-width: 400px;
 }
 
 .emptyState {
