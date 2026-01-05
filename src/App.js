@@ -749,13 +749,20 @@ function App() {
 
     const pct = (value) => (actualTimeHours > 0 ? (value / actualTimeHours) * 100 : 0);
 
+    // La barra de plan es proporcional: Tiempo_Planificado / Tiempo_Total_Real
     const planPercent = pct(plannedTimeHours);
-    // "Desvío total / Over Planned" = NO planificado 
-    const overPlanPercent = Math.max(0, 100 - planPercent);
+    // La barra de desvío es el resto: (Tiempo_Total_Real - Tiempo_Planificado) / Tiempo_Total_Real
+    const desvioTimeHours = Math.max(0, actualTimeHours - plannedTimeHours);
+    const overPlanPercent = pct(desvioTimeHours);
+    // Porcentaje de desvío real para mostrar en la leyenda: (Tiempo_Total_Real - Tiempo_Planificado) / Tiempo_Planificado * 100
+    const overPlanPercentLabel = plannedTimeHours > 0 
+      ? (desvioTimeHours / plannedTimeHours) * 100 
+      : 0;
 
     return {
       planPercent,
       overPlanPercent,
+      overPlanPercentLabel,
       items: [
         {
           key: 'pe',
@@ -1060,6 +1067,7 @@ function App() {
             title="Plan / Actual"
             planPercent={operatingTimesData.planPercent}
             overPlanPercent={operatingTimesData.overPlanPercent}
+            overPlanPercentLabel={operatingTimesData.overPlanPercentLabel}
             items={operatingTimesData.items}
           />
         </div>

@@ -8,11 +8,14 @@ function clampPercent(n) {
   return Math.max(0, Math.min(100, n));
 }
 
-function formatPercent(n) {
+function formatPercent(n, skipClamp = false) {
+  if (skipClamp) {
+    return Number.isFinite(n) ? `${Math.max(0, n).toFixed(1)}%` : '0.0%';
+  }
   return `${clampPercent(n).toFixed(1)}%`;
 }
 
-function OperatingTimesChart({ title, planPercent, overPlanPercent, items }) {
+function OperatingTimesChart({ title, planPercent, overPlanPercent, overPlanPercentLabel, items }) {
   const hasAny =
     Number.isFinite(planPercent) ||
     Number.isFinite(overPlanPercent) ||
@@ -43,14 +46,10 @@ function OperatingTimesChart({ title, planPercent, overPlanPercent, items }) {
     return safeItems.map((it) => ({ ...it, width: (it.percent / sum) * 100 }));
   })();
 
-  // OverPlan
+  // OverPlan - ahora como overlay desde la derecha, independiente del plan
   const overPlanPlacement = (() => {
-    const maxWidth = clampPercent(100 - safePlan);
-    const width = clampPercent(Math.min(maxWidth, safeOverPlan));
-    let left = clampPercent(100 - width);
-    if (left < safePlan) {
-      left = safePlan;
-    }
+    const width = clampPercent(safeOverPlan);
+    const left = clampPercent(100 - width);
     return { left, width };
   })();
 
@@ -61,13 +60,15 @@ function OperatingTimesChart({ title, planPercent, overPlanPercent, items }) {
       percent: safePlan,
       color: 'var(--white-w24, rgba(255, 255, 255, 0.24))',
       dotOpacity: 0.4,
+      skipClamp: false,
     },
     {
       key: 'overPlan',
       label: 'Desvío total:',
-      percent: safeOverPlan,
+      percent: overPlanPercentLabel !== undefined ? overPlanPercentLabel : safeOverPlan,
       color: 'rgba(255, 67, 54, 0.40)',
       dotOpacity: 0.4,
+      skipClamp: true, // No limitar el porcentaje de desvío
     },
     ...safeItems,
   ];
@@ -122,7 +123,7 @@ function OperatingTimesChart({ title, planPercent, overPlanPercent, items }) {
                 style={{ background: it.color, opacity: it.dotOpacity ?? 1 }}
               />
               <span className={styles.legendLabel}>
-                {it.label} {formatPercent(it.percent)}
+                {it.label} {formatPercent(it.percent, it.skipClamp)}
               </span>
             </div>
           ))}
@@ -136,6 +137,7 @@ OperatingTimesChart.propTypes = {
   title: PropTypes.string.isRequired,
   planPercent: PropTypes.number,
   overPlanPercent: PropTypes.number,
+  overPlanPercentLabel: PropTypes.number,
   items: PropTypes.arrayOf(
     PropTypes.shape({
       key: PropTypes.string,
@@ -149,6 +151,7 @@ OperatingTimesChart.propTypes = {
 OperatingTimesChart.defaultProps = {
   planPercent: 0,
   overPlanPercent: 0,
+  overPlanPercentLabel: undefined,
   items: [],
 };
 
