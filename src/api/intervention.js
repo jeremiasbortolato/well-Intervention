@@ -762,39 +762,6 @@ export async function getNoCalidadCosts({
 }
 
 /**
- * Fetches intervention unit details (and included active well) from Corva API v2.
- * Used to retrieve well attributes like `area` that may not exist in commons context.
- *
- * @async
- * @param {string|number} interventionUnitId
- * @returns {Promise<any>} Raw API response
- */
-export async function fetchInterventionUnitWithActiveWell(interventionUnitId) {
-  if (!interventionUnitId) {
-    return null;
-  }
-
-  try {
-    // API expects JSON:API-style sparse fieldsets with repeated `fields[]` and `ids[]`.
-    // IMPORTANT: the Corva client already serializes arrays as `fields[]=...`,
-    // so we must use `fields` (NOT `fields[]`) to avoid generating `fields[][]=...`.
-    const response = await corvaAPI.get('/v2/intervention_units', {
-      fields: [
-        'intervention_unit.name',
-        'intervention_unit.type',
-        'intervention_unit.active_well',
-      ],
-      ids: [String(interventionUnitId)],
-    });
-
-    return unwrapCorvaResponse(response);
-  } catch (error) {
-    console.error('Error fetching intervention unit details:', error);
-    throw error;
-  }
-}
-
-/**
  * Gets operational lost time (Tiempo perdido Operativo) grouped by "Valor" (type.title)
  * with mainType "Operativo".
  * Returns top N entries sorted by duration (highest first).

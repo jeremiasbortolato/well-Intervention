@@ -16,7 +16,6 @@ import InterventionCurveChart from './components/InterventionCurveChart';
 import PressureTestsSection from './components/PressureTestsSection/PressureTestsSection';
 import {
   fetchInterventionUnitEvents,
-  fetchInterventionUnitWithActiveWell,
   fetchInterventionTypeGoals,
   fetchWellPlanData,
   fetchTimelogData,
@@ -68,56 +67,8 @@ function App() {
   const [isLoadingOperationalLostTime, setIsLoadingOperationalLostTime] = useState(false);
 
   useEffect(() => {
-    const interventionUnitId = interventionUnit?.id;
-    if (!interventionUnitId) {
-      setActiveWellDetails(null);
-      return;
-    }
-
-    let isMounted = true;
-
-    const loadActiveWellFromUnit = async () => {
-      try {
-        const response = await fetchInterventionUnitWithActiveWell(interventionUnitId);
-        if (!isMounted) return;
-
-        const unit = Array.isArray(response?.data) ? response.data[0] : null;
-        const included = Array.isArray(response?.included) ? response.included : [];
-
-        const activeWellId = unit?.relationships?.active_well?.data?.id;
-        if (!activeWellId) {
-          setActiveWellDetails(null);
-          return;
-        }
-
-        const includedWell = included.find(
-          item => item?.type === 'well' && String(item?.id) === String(activeWellId)
-        );
-
-        const wellAttrs = includedWell?.attributes || {};
-        setActiveWellDetails({
-          id: String(includedWell?.id ?? activeWellId),
-          name: wellAttrs?.name,
-          area: wellAttrs?.area,
-          settings: wellAttrs?.settings,
-          asset_id: wellAttrs?.asset_id,
-          raw: includedWell,
-        });
-      } catch (e) {
-        if (!isMounted) return;
-        setActiveWellDetails(null);
-      }
-    };
-
-    loadActiveWellFromUnit();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [interventionUnit?.id]);
-
-  useEffect(() => {
     if (!well?.id) {
+      setActiveWellDetails(null);
       return;
     }
 
@@ -157,10 +108,31 @@ function App() {
         console.log('[App] Loaded intervention events:', normalizedEvents);
 
         setInterventionEvents(normalizedEvents);
+
+        // Extract well details from included data
+        const included = Array.isArray(response?.included) ? response.included : [];
+        const includedWell = included.find(
+          item => item?.type === 'well' && String(item?.id) === String(well.id)
+        );
+
+        if (includedWell) {
+          const wellAttrs = includedWell?.attributes || {};
+          setActiveWellDetails({
+            id: String(includedWell?.id ?? well.id),
+            name: wellAttrs?.name,
+            area: wellAttrs?.area,
+            settings: wellAttrs?.settings,
+            asset_id: wellAttrs?.asset_id,
+            raw: includedWell,
+          });
+        } else {
+          setActiveWellDetails(null);
+        }
       } catch (error) {
         if (!isMounted) return;
         setEventsError(error);
         setInterventionEvents([]);
+        setActiveWellDetails(null);
       } finally {
         if (isMounted) {
           setIsLoadingEvents(false);
@@ -459,7 +431,7 @@ function App() {
 
   // Load Operational Lost Time data (for treemap)
   useEffect(() => {
-    if (!assetId || !timelogData.length) {
+    if (!assetId) {
       return;
     }
 
@@ -468,29 +440,80 @@ function App() {
     const loadOperationalLostTime = async () => {
       setIsLoadingOperationalLostTime(true);
       try {
-        // Calculate start and end time from timelog data
-        let minStart = null;
-        let maxEnd = null;
+        const normalizeUnixSeconds = (value) => {
+          if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+          // ms timestamps are typically > 1e11, seconds are ~1e9
+          return value > 1e11 ? Math.floor(value / 1000) : Math.floor(value);
+        };
 
-        timelogData.forEach((row) => {
-          const start = row?.data?.start_time;
-          const end = row?.data?.end_time;
-
-          if (typeof start === 'number' && Number.isFinite(start)) {
-            minStart = minStart == null ? start : Math.min(minStart, start);
+        const parseToUnixSeconds = (value) => {
+          if (value == null) return null;
+          if (typeof value === 'number') return normalizeUnixSeconds(value);
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            const parsedMs = Date.parse(trimmed);
+            if (!Number.isNaN(parsedMs)) return Math.floor(parsedMs / 1000);
+            const asNumber = Number(trimmed);
+            if (Number.isFinite(asNumber)) return normalizeUnixSeconds(asNumber);
           }
+          return null;
+        };
 
-          if (typeof end === 'number' && Number.isFinite(end)) {
-            maxEnd = maxEnd == null ? end : Math.max(maxEnd, end);
-          }
-        });
+        // Prefer selected intervention event range (when available), fall back to timelog range
+        const eventAttrs = selectedEvent?.raw?.attributes || {};
+        const startCandidates = [
+          eventAttrs.start_time,
+          eventAttrs.started_at,
+          eventAttrs.start_at,
+          eventAttrs.start,
+          eventAttrs.begin_at,
+          eventAttrs.begin_time,
+        ];
+        const endCandidates = [
+          eventAttrs.end_time,
+          eventAttrs.ended_at,
+          eventAttrs.end_at,
+          eventAttrs.end,
+          eventAttrs.finish_at,
+          eventAttrs.finish_time,
+        ];
 
-        const data = await getOperationalLostTime({
-          assetId,
-          startTime: minStart,
-          endTime: maxEnd,
-          topN: 5,
-        });
+        let startTime = startCandidates.map(parseToUnixSeconds).find(v => v != null) ?? null;
+        let endTime = endCandidates.map(parseToUnixSeconds).find(v => v != null) ?? null;
+
+        if ((startTime == null || endTime == null) && Array.isArray(timelogData) && timelogData.length) {
+          let minStart = null;
+          let maxEnd = null;
+
+          timelogData.forEach((row) => {
+            const start = normalizeUnixSeconds(row?.data?.start_time);
+            const end = normalizeUnixSeconds(row?.data?.end_time);
+
+            if (start != null) {
+              minStart = minStart == null ? start : Math.min(minStart, start);
+            }
+
+            if (end != null) {
+              maxEnd = maxEnd == null ? end : Math.max(maxEnd, end);
+            }
+          });
+
+          if (startTime == null) startTime = minStart;
+          if (endTime == null) endTime = maxEnd;
+        }
+
+        // Ongoing window: if we have start but no end, use now
+        if (startTime != null && endTime == null) {
+          endTime = Math.floor(Date.now() / 1000);
+        }
+
+        const params = { assetId, topN: 5 };
+        if (startTime != null && endTime != null) {
+          params.startTime = startTime;
+          params.endTime = endTime;
+        }
+
+        const data = await getOperationalLostTime(params);
 
         if (isMounted) {
           setOperationalLostTime(data);
@@ -510,7 +533,7 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [assetId, timelogData]);
+  }, [assetId, selectedInterventionId, selectedEvent, timelogData]);
 
   const interventionType = useMemo(() => {
     if (eventsForWell.length) {
