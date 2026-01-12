@@ -868,3 +868,259 @@ export async function getOperationalLostTime({ assetId, startTime, endTime, topN
     return [];
   }
 }
+
+/**
+ * Mapping of sub-operation codes to their categories and descriptions.
+ * Based on reference table provided.
+ */
+const TRIPPING_CODE_MAP = {
+  '251A': { category: 'Varilla', description: 'Saca v/b en simple' },
+  '251B': { category: 'Varilla', description: 'Saca v/b en dobles' },
+  '251C': { category: 'Varilla', description: 'Saca v/b en simple' },
+  '251D': { category: 'Varilla', description: 'Saca v/b en dobles' },
+  '253A': { category: 'Tubing', description: 'Saca TBG en simple' },
+  '253B': { category: 'Tubing', description: 'Saca TBG en dobles' },
+  '253C': { category: 'Tubing', description: 'Saca TBG en simple' },
+  '253D': { category: 'Tubing', description: 'Saca TBG en dobles' },
+  '253M': { category: 'Tubing', description: 'Saca TBG en simple sunchos' },
+  '253T': { category: 'Tubing', description: 'Saca TBG en dobles sunchos' },
+  '257S': { category: 'Tubing', description: 'Baja TBG en dobles sunchos' },
+  '257M': { category: 'Tubing', description: 'Baja TBG en simple sunchos' },
+  '257D': { category: 'Tubing', description: 'Baja TBG en dobles' },
+  '257C': { category: 'Tubing', description: 'Baja TBG en simple' },
+  '257B': { category: 'Tubing', description: 'Baja TBG en dobles' },
+  '257A': { category: 'Tubing', description: 'Baja TBG en simple' },
+  '255D': { category: 'Varilla', description: 'Baja v/b en dobles' },
+  '255C': { category: 'Varilla', description: 'Baja v/b en simple' },
+  '255B': { category: 'Varilla', description: 'Baja v/b en dobles' },
+  '255A': { category: 'Varilla', description: 'Baja v/b en simple' },
+};
+
+/**
+ * Fetches tripping speed goals from ypf#interventions.tripping-speed-goals collection.
+ *
+ * @async
+ * @param {Object} params
+ * @param {number} params.companyId - Company ID (default: 375)
+ * @returns {Promise<any[]>}
+ */
+export async function fetchTrippingSpeedGoals({ companyId = 375 }) {
+  try {
+    console.log('[Performance] Fetching tripping speed goals for companyId:', companyId);
+    const response = await corvaDataAPI.get('/api/v1/data/ypf/interventions.tripping-speed-goals/', {
+      limit: 100,
+      query: JSON.stringify({ company_id: companyId }),
+      sort: JSON.stringify({ 'data.code': 1 }), // Required parameter
+    });
+
+    console.log('[Performance] Tripping speed goals response:', response);
+
+    if (Array.isArray(response?.results)) {
+      console.log('[Performance] Found', response.results.length, 'goals in results');
+      return response.results;
+    }
+
+    if (Array.isArray(response?.data)) {
+      console.log('[Performance] Found', response.data.length, 'goals in data');
+      return response.data;
+    }
+
+    const result = Array.isArray(response) ? response : [];
+    console.log('[Performance] Returning', result.length, 'goals (direct array or empty)');
+    return result;
+  } catch (error) {
+    console.error('[Performance] Error fetching tripping speed goals:', error);
+    return [];
+  }
+}
+
+/**
+ * Calculates performance comparison data for tripping operations vs carta oferta goals.
+ * 
+ * Uses timelog data to calculate actual performance (Valor Real) in u/h units.
+ * Compares with goals from tripping-speed-goals collection (Objetivo).
+ * Only includes codes that were actually used in the well.
+ *
+ * @async
+ * @param {Object} params
+ * @param {number} params.assetId - Asset ID
+ * @param {string} params.eventId - Event ID
+ * @param {number} params.companyId - Company ID (default: 375)
+ * @returns {Promise<Array<{category: string, operation: string, actual: number|string, target: number|string, difference: string, differenceState: string}>>}
+ */
+export async function getPerformanceComparisonData({ assetId, eventId, companyId = 375 }) {
+  if (!assetId || !eventId) {
+    return [];
+  }
+
+  try {
+    // Fetch timelog data and tripping speed goals in parallel
+    const [timelogs, goals] = await Promise.all([
+      fetchTimelogData({ assetId, eventId }),
+      fetchTrippingSpeedGoals({ companyId }),
+    ]);
+
+    console.log('[Performance] Total timelog records:', timelogs.length);
+    console.log('[Performance] Total goals:', goals.length);
+
+    // Get all tripping codes from the constant
+    const trippingCodes = Object.keys(TRIPPING_CODE_MAP);
+    console.log('[Performance] Looking for tripping codes:', trippingCodes);
+
+    // Group timelog data by op_subcode
+    const groupedByCode = {};
+    let skippedNoCode = 0;
+    let skippedNotTripping = 0;
+    let skippedNoCantidad = 0;
+    let processedCount = 0;
+    
+    // Collect all unique op_subcodes found
+    const uniqueOpSubcodes = new Set();
+    
+    timelogs.forEach((rec) => {
+      const opSubcode = rec?.data?.op_subcode;
+      
+      if (!opSubcode) {
+        skippedNoCode++;
+        return;
+      }
+      
+      uniqueOpSubcodes.add(opSubcode);
+      
+      if (!trippingCodes.includes(opSubcode)) {
+        skippedNotTripping++;
+        return; // Skip if not a tripping code
+      }
+
+      const duration = Number(rec?.data?.duration) || 0;
+      const cantidadUni = Number(rec?.data?.cantidad_uni) || 0;
+      
+      // Skip if no cantidad_uni (we need it for calculation)
+      if (cantidadUni <= 0) {
+        skippedNoCantidad++;
+        return;
+      }
+
+      if (!groupedByCode[opSubcode]) {
+        groupedByCode[opSubcode] = {
+          totalDuration: 0,
+          totalCantidad: 0,
+        };
+      }
+
+      groupedByCode[opSubcode].totalDuration += duration;
+      groupedByCode[opSubcode].totalCantidad += cantidadUni;
+      processedCount++;
+    });
+    
+    console.log('[Performance] Unique op_subcodes found in timelog:', Array.from(uniqueOpSubcodes).sort());
+    console.log('[Performance] Processed records:', processedCount);
+    console.log('[Performance] Skipped - no code:', skippedNoCode);
+    console.log('[Performance] Skipped - not tripping code:', skippedNotTripping);
+    console.log('[Performance] Skipped - no cantidad_uni:', skippedNoCantidad);
+    console.log('[Performance] Grouped codes:', Object.keys(groupedByCode));
+
+    // Build goals map from tripping-speed-goals
+    const goalsMap = {};
+    goals.forEach((goal) => {
+      const goalData = goal?.data;
+      if (!goalData) return;
+      
+      // The field names in the API response
+      const code = goalData.sub_operation_code || goalData.code;
+      const cantidad = goalData['cantidad (units/hour)'] || goalData.cantidad;
+      const description = goalData.description;
+
+      if (code && cantidad != null) {
+        goalsMap[code] = {
+          goal: Number(cantidad),
+          description: description || TRIPPING_CODE_MAP[code]?.description || '',
+        };
+      }
+    });
+    
+    console.log('[Performance] Goals map keys:', Object.keys(goalsMap));
+    console.log('[Performance] Sample goals:', Object.entries(goalsMap).slice(0, 3));
+
+    // Calculate performance for each used code
+    const performanceRows = [];
+
+    Object.entries(groupedByCode).forEach(([code, data]) => {
+      const { totalDuration, totalCantidad } = data;
+      
+      // Skip if no duration or cantidad
+      if (totalDuration <= 0 || totalCantidad <= 0) {
+        return;
+      }
+
+      // Calculate Valor Real (actual performance in u/h)
+      const valorReal = totalCantidad / totalDuration;
+
+      // Get goal (Objetivo)
+      const goalData = goalsMap[code];
+      const objetivo = goalData?.goal;
+
+      // Skip if no goal available for this code
+      if (objetivo == null || objetivo <= 0) {
+        return;
+      }
+
+      // Calculate difference
+      const diferencia = objetivo - valorReal;
+      const porcentaje = (diferencia / objetivo) * 100;
+
+      // Determine state based on performance
+      // Negative difference means actual is better than goal (valorReal > objetivo) = good
+      // Positive difference means actual is worse than goal (valorReal < objetivo) = bad
+      let differenceState = 'neutral';
+      if (diferencia < 0) {
+        // Actual is better than goal (faster/more units per hour)
+        differenceState = 'success';
+      } else if (diferencia > 0) {
+        // Actual is worse than goal (slower/fewer units per hour)
+        differenceState = 'error';
+      }
+
+      // Format difference string
+      // Show "+" when actual is better (diferencia < 0), "-" when actual is worse (diferencia > 0)
+      const differenceStr = `${diferencia < 0 ? '+' : '-'} ${Math.abs(diferencia).toFixed(1)} (${Math.abs(porcentaje).toFixed(1)}%)`;
+
+      // Get category and description from mapping
+      const codeInfo = TRIPPING_CODE_MAP[code];
+      const category = codeInfo?.category || 'Otro';
+      const operation = goalData?.description || codeInfo?.description || code;
+
+      performanceRows.push({
+        category,
+        operation,
+        actual: Number(valorReal.toFixed(1)),
+        target: Number(objetivo.toFixed(1)),
+        difference: differenceStr,
+        differenceState,
+        code, // Keep for sorting
+      });
+    });
+
+    // Sort by category (Tubing first, then Varilla) and then by code
+    performanceRows.sort((a, b) => {
+      if (a.category !== b.category) {
+        // Tubing first
+        if (a.category === 'Tubing') return -1;
+        if (b.category === 'Tubing') return 1;
+        return a.category.localeCompare(b.category);
+      }
+      return a.code.localeCompare(b.code);
+    });
+
+    console.log('[Performance] Final performance rows count:', performanceRows.length);
+    if (performanceRows.length === 0) {
+      console.log('[Performance] No performance data found. This well may not have tripping operations yet, or cantidad_uni is not recorded.');
+    }
+
+    // Remove code property before returning
+    return performanceRows.map(({ code, ...row }) => row);
+  } catch (error) {
+    console.error('Error getting performance comparison data:', error);
+    return [];
+  }
+}

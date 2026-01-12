@@ -24,6 +24,7 @@ import {
   getNPTByConsequence,
   getTNPByOpSubcode,
   getOperationalLostTime,
+  getPerformanceComparisonData,
 } from './api/intervention';
 import {
   INTERVENTION_OPTIONS,
@@ -65,6 +66,8 @@ function App() {
   const [isLoadingTnpSubcode, setIsLoadingTnpSubcode] = useState(false);
   const [operationalLostTime, setOperationalLostTime] = useState([]);
   const [isLoadingOperationalLostTime, setIsLoadingOperationalLostTime] = useState(false);
+  const [performanceData, setPerformanceData] = useState([]);
+  const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
 
   useEffect(() => {
     if (!well?.id) {
@@ -534,6 +537,43 @@ function App() {
       isMounted = false;
     };
   }, [assetId, selectedInterventionId, selectedEvent, timelogData]);
+
+  // Load Performance Comparison data (Comparación de Performance vs Carta Oferta)
+  useEffect(() => {
+    if (!assetId || !eventId || isLoadingPlannedVsActual) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadPerformanceData = async () => {
+      setIsLoadingPerformance(true);
+      try {
+        const data = await getPerformanceComparisonData({
+          assetId,
+          eventId,
+          companyId: INTERVENTION_COMPANY_ID,
+        });
+
+        if (isMounted) {
+          setPerformanceData(data);
+          setIsLoadingPerformance(false);
+        }
+      } catch (error) {
+        console.error('Error loading performance comparison data:', error);
+        if (isMounted) {
+          setPerformanceData([]);
+          setIsLoadingPerformance(false);
+        }
+      }
+    };
+
+    loadPerformanceData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId, eventId, isLoadingPlannedVsActual]);
 
   const interventionType = useMemo(() => {
     if (eventsForWell.length) {
@@ -1162,7 +1202,7 @@ function App() {
           <div className={styles.tertiaryRight}>
             <PerformanceComparison
               title="Comparación de Performance vs Carta Oferta"
-              rows={PERFORMANCE_ROWS}
+              rows={performanceData.length > 0 ? performanceData : PERFORMANCE_ROWS}
             />
           </div>
         </div>
