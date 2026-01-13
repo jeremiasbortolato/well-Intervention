@@ -1084,7 +1084,7 @@ function App() {
 
         <BasicInformation
           title="Información Básica"
-          badgeText="Objetivo Final Cumplido"
+          // badgeText="Objetivo Final Cumplido"
           items={basicInfoItems}
         />
 
