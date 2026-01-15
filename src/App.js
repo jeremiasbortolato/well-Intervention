@@ -14,6 +14,7 @@ import { NonQualityCostCard } from './components/OperationalSummary/OperationalS
 import PerformanceComparison from './components/PerformanceComparison/PerformanceComparison';
 import InterventionCurveChart from './components/InterventionCurveChart';
 import PressureTestsSection from './components/PressureTestsSection/PressureTestsSection';
+import Comments from './components/Comments/Comments';
 import {
   fetchInterventionUnitEvents,
   fetchInterventionTypeGoals,
@@ -24,6 +25,7 @@ import {
   getNPTByConsequence,
   getTNPByOpSubcode,
   getOperationalLostTime,
+  getWellComments,
   getPerformanceComparisonData,
 } from './api/intervention';
 import {
@@ -41,6 +43,75 @@ import {
 } from './constants';
 
 import styles from './App.css';
+
+const getInterventionTimeRange = ({ selectedEvent, timelogData }) => {
+  const normalizeUnixSeconds = (value) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    // ms timestamps are typically > 1e11, seconds are ~1e9
+    return value > 1e11 ? Math.floor(value / 1000) : Math.floor(value);
+  };
+
+  const parseToUnixSeconds = (value) => {
+    if (value == null) return null;
+    if (typeof value === 'number') return normalizeUnixSeconds(value);
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      const parsedMs = Date.parse(trimmed);
+      if (!Number.isNaN(parsedMs)) return Math.floor(parsedMs / 1000);
+      const asNumber = Number(trimmed);
+      if (Number.isFinite(asNumber)) return normalizeUnixSeconds(asNumber);
+    }
+    return null;
+  };
+
+  const eventAttrs = selectedEvent?.raw?.attributes || {};
+  const startCandidates = [
+    eventAttrs.start_time,
+    eventAttrs.started_at,
+    eventAttrs.start_at,
+    eventAttrs.start,
+    eventAttrs.begin_at,
+    eventAttrs.begin_time,
+  ];
+  const endCandidates = [
+    eventAttrs.end_time,
+    eventAttrs.ended_at,
+    eventAttrs.end_at,
+    eventAttrs.end,
+    eventAttrs.finish_at,
+    eventAttrs.finish_time,
+  ];
+
+  let startTime = startCandidates.map(parseToUnixSeconds).find(v => v != null) ?? null;
+  let endTime = endCandidates.map(parseToUnixSeconds).find(v => v != null) ?? null;
+
+  if ((startTime == null || endTime == null) && Array.isArray(timelogData) && timelogData.length) {
+    let minStart = null;
+    let maxEnd = null;
+
+    timelogData.forEach((row) => {
+      const start = normalizeUnixSeconds(row?.data?.start_time);
+      const end = normalizeUnixSeconds(row?.data?.end_time);
+
+      if (start != null) {
+        minStart = minStart == null ? start : Math.min(minStart, start);
+      }
+
+      if (end != null) {
+        maxEnd = maxEnd == null ? end : Math.max(maxEnd, end);
+      }
+    });
+
+    if (startTime == null) startTime = minStart;
+    if (endTime == null) endTime = maxEnd;
+  }
+
+  if (startTime != null && endTime == null) {
+    endTime = Math.floor(Date.now() / 1000);
+  }
+
+  return { startTime, endTime };
+};
 
 function App() {
   const { appKey, well, interventionUnit } = useAppCommons();
@@ -68,6 +139,8 @@ function App() {
   const [isLoadingOperationalLostTime, setIsLoadingOperationalLostTime] = useState(false);
   const [performanceData, setPerformanceData] = useState([]);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
+  const [commentsData, setCommentsData] = useState([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   useEffect(() => {
     if (!well?.id) {
@@ -443,73 +516,7 @@ function App() {
     const loadOperationalLostTime = async () => {
       setIsLoadingOperationalLostTime(true);
       try {
-        const normalizeUnixSeconds = (value) => {
-          if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-          // ms timestamps are typically > 1e11, seconds are ~1e9
-          return value > 1e11 ? Math.floor(value / 1000) : Math.floor(value);
-        };
-
-        const parseToUnixSeconds = (value) => {
-          if (value == null) return null;
-          if (typeof value === 'number') return normalizeUnixSeconds(value);
-          if (typeof value === 'string') {
-            const trimmed = value.trim();
-            const parsedMs = Date.parse(trimmed);
-            if (!Number.isNaN(parsedMs)) return Math.floor(parsedMs / 1000);
-            const asNumber = Number(trimmed);
-            if (Number.isFinite(asNumber)) return normalizeUnixSeconds(asNumber);
-          }
-          return null;
-        };
-
-        // Prefer selected intervention event range (when available), fall back to timelog range
-        const eventAttrs = selectedEvent?.raw?.attributes || {};
-        const startCandidates = [
-          eventAttrs.start_time,
-          eventAttrs.started_at,
-          eventAttrs.start_at,
-          eventAttrs.start,
-          eventAttrs.begin_at,
-          eventAttrs.begin_time,
-        ];
-        const endCandidates = [
-          eventAttrs.end_time,
-          eventAttrs.ended_at,
-          eventAttrs.end_at,
-          eventAttrs.end,
-          eventAttrs.finish_at,
-          eventAttrs.finish_time,
-        ];
-
-        let startTime = startCandidates.map(parseToUnixSeconds).find(v => v != null) ?? null;
-        let endTime = endCandidates.map(parseToUnixSeconds).find(v => v != null) ?? null;
-
-        if ((startTime == null || endTime == null) && Array.isArray(timelogData) && timelogData.length) {
-          let minStart = null;
-          let maxEnd = null;
-
-          timelogData.forEach((row) => {
-            const start = normalizeUnixSeconds(row?.data?.start_time);
-            const end = normalizeUnixSeconds(row?.data?.end_time);
-
-            if (start != null) {
-              minStart = minStart == null ? start : Math.min(minStart, start);
-            }
-
-            if (end != null) {
-              maxEnd = maxEnd == null ? end : Math.max(maxEnd, end);
-            }
-          });
-
-          if (startTime == null) startTime = minStart;
-          if (endTime == null) endTime = maxEnd;
-        }
-
-        // Ongoing window: if we have start but no end, use now
-        if (startTime != null && endTime == null) {
-          endTime = Math.floor(Date.now() / 1000);
-        }
-
+        const { startTime, endTime } = getInterventionTimeRange({ selectedEvent, timelogData });
         const params = { assetId, topN: 5 };
         if (startTime != null && endTime != null) {
           params.startTime = startTime;
@@ -537,6 +544,47 @@ function App() {
       isMounted = false;
     };
   }, [assetId, selectedInterventionId, selectedEvent, timelogData]);
+
+  // Load Comments data
+  useEffect(() => {
+    if (!assetId) {
+      setCommentsData([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadComments = async () => {
+      setIsLoadingComments(true);
+      try {
+        const { startTime, endTime } = getInterventionTimeRange({ selectedEvent, timelogData });
+        const params = { assetId };
+        if (startTime != null && endTime != null) {
+          params.startTime = startTime;
+          params.endTime = endTime;
+        }
+
+        const data = await getWellComments(params);
+
+        if (isMounted) {
+          setCommentsData(data);
+          setIsLoadingComments(false);
+        }
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        if (isMounted) {
+          setCommentsData([]);
+          setIsLoadingComments(false);
+        }
+      }
+    };
+
+    loadComments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId, selectedEvent, timelogData]);
 
   // Load Performance Comparison data (Comparación de Performance vs Carta Oferta)
   useEffect(() => {
@@ -1038,6 +1086,28 @@ function App() {
       }
     }
 
+    //if minStart is null, get the most recent spud release
+    if (minStart == null) {
+      const spudRelease = well?.settings?.spud_release || activeWellDetails?.settings?.spud_release;
+      if (Array.isArray(spudRelease) && spudRelease.length) {
+        // search the most recent release
+        const mostRecentRelease = spudRelease
+          .filter(entry => entry.release)
+          .sort((a, b) => {
+            const dateA = moment(a.release, 'MM/DD/YYYY HH:mm');
+            const dateB = moment(b.release, 'MM/DD/YYYY HH:mm');
+            return dateB.valueOf() - dateA.valueOf(); // lastest first
+          })[0];
+
+        if (mostRecentRelease?.release) {
+          const releaseMoment = moment.tz(mostRecentRelease.release, 'MM/DD/YYYY HH:mm', tz);
+          if (releaseMoment.isValid()) {
+            minStart = releaseMoment.unix();
+          }
+        }
+      }
+    }
+
     const formatTs = ts =>
       ts == null ? '-' : moment.unix(ts).tz(tz).format('DD/MM/YYYY HH:mm');
 
@@ -1062,10 +1132,12 @@ function App() {
     well?.name,
     well?.settings?.basin,
     well?.settings?.timezone,
+    well?.settings?.spud_release,
     well?.area,
     activeWellDetails?.name,
     activeWellDetails?.settings?.basin,
     activeWellDetails?.settings?.timezone,
+    activeWellDetails?.settings?.spud_release,
     activeWellDetails?.area,
     timelogData,
   ]);
@@ -1212,6 +1284,10 @@ function App() {
             assetId={assetId}
             title="Pressure Tests - Último Test Guardado"
           />
+        </div>
+
+        <div className={styles.commentsRow}>
+          <Comments comments={commentsData} isLoading={isLoadingComments} />
         </div>
 
         {eventsError ? (
