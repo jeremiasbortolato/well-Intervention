@@ -557,14 +557,9 @@ function App() {
     const loadComments = async () => {
       setIsLoadingComments(true);
       try {
-        const { startTime, endTime } = getInterventionTimeRange({ selectedEvent, timelogData });
-        const params = { assetId };
-        if (startTime != null && endTime != null) {
-          params.startTime = startTime;
-          params.endTime = endTime;
-        }
-
-        const data = await getWellComments(params);
+        // No filter comments by time window - show all comments for the asset
+        // This matches the behavior of days-vs-activity app
+        const data = await getWellComments({ assetId });
 
         if (isMounted) {
           setCommentsData(data);
@@ -584,7 +579,7 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [assetId, selectedEvent, timelogData]);
+  }, [assetId]);
 
   // Load Performance Comparison data (Comparación de Performance vs Carta Oferta)
   useEffect(() => {
@@ -1068,20 +1063,74 @@ function App() {
     const tz =
       well?.settings?.timezone || activeWellDetails?.settings?.timezone || moment.tz.guess();
 
+    const normalizeUnixSeconds = (value) => {
+      if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+      // ms timestamps are typically > 1e11, seconds are ~1e9
+      return value > 1e11 ? Math.floor(value / 1000) : Math.floor(value);
+    };
+
+    const parseToUnixSeconds = (value) => {
+      if (value == null) return null;
+      if (typeof value === 'number') return normalizeUnixSeconds(value);
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        const parsedMs = Date.parse(trimmed);
+        if (!Number.isNaN(parsedMs)) return Math.floor(parsedMs / 1000);
+        const asNumber = Number(trimmed);
+        if (Number.isFinite(asNumber)) return normalizeUnixSeconds(asNumber);
+      }
+      return null;
+    };
+
     let minStart = null;
     let maxEnd = null;
 
+    // Aggregate timelog data by step_no to get accurate timestamps
+    // This mirrors the logic in days-vs-activity app
     if (Array.isArray(timelogData) && timelogData.length) {
+      const stepMap = new Map();
+      
+      // Group by step_no and track min start_time and max end_time for each step
       for (const row of timelogData) {
-        const start = row?.data?.start_time;
-        const end = row?.data?.end_time;
+        const stepNo = row?.data?.step_no;
+        const start = parseToUnixSeconds(row?.data?.start_time);
+        const end = parseToUnixSeconds(row?.data?.end_time);
 
-        if (typeof start === 'number' && Number.isFinite(start)) {
-          minStart = minStart == null ? start : Math.min(minStart, start);
+        if (stepNo != null && Number.isFinite(Number(stepNo))) {
+          const step = Number(stepNo);
+          
+          if (!stepMap.has(step)) {
+            stepMap.set(step, { minStart: null, maxEnd: null });
+          }
+          
+          const stepData = stepMap.get(step);
+          
+          if (typeof start === 'number' && Number.isFinite(start)) {
+            stepData.minStart = stepData.minStart == null ? start : Math.min(stepData.minStart, start);
+          }
+          
+          if (typeof end === 'number' && Number.isFinite(end)) {
+            stepData.maxEnd = stepData.maxEnd == null ? end : Math.max(stepData.maxEnd, end);
+          }
         }
-
-        if (typeof end === 'number' && Number.isFinite(end)) {
-          maxEnd = maxEnd == null ? end : Math.max(maxEnd, end);
+      }
+      
+      // Get sorted steps (excluding step 0 which is just a starting point)
+      const sortedSteps = Array.from(stepMap.entries())
+        .sort(([a], [b]) => a - b)
+        .filter(([step]) => step > 0);
+      
+      // Get minStart from first valid step (like days-vs-activity uses real[1]?.timestamp)
+      const firstWithStart = sortedSteps.find(([, stepData]) => stepData.minStart != null);
+      if (firstWithStart) {
+        const [, firstStepData] = firstWithStart;
+        minStart = firstStepData.minStart;
+      }
+      
+      // Get maxEnd from all steps
+      for (const stepData of stepMap.values()) {
+        if (stepData.maxEnd != null) {
+          maxEnd = maxEnd == null ? stepData.maxEnd : Math.max(maxEnd, stepData.maxEnd);
         }
       }
     }

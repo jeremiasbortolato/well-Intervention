@@ -129,29 +129,64 @@ export async function fetchWellPlanData({ assetId, eventId }) {
  * @returns {Promise<any[]>}
  */
 export async function fetchTimelogData({ assetId, eventId }) {
-  if (!assetId || !eventId) {
+  if (!assetId) {
     return [];
   }
 
   try {
-    const response = await corvaDataAPI.get('/api/v1/data/corva/interventions.timelog.data/', {
-      limit: 500,
-      sort: JSON.stringify({ 'data.start_time': 1 }),
-      query: JSON.stringify({
-        asset_id: assetId,
-        'data.event_id': eventId,
-      }),
-    });
+    const extractResults = (response) => {
+      if (Array.isArray(response?.results)) return response.results;
+      if (Array.isArray(response?.data)) return response.data;
+      return Array.isArray(response) ? response : [];
+    };
 
-    if (Array.isArray(response?.results)) {
-      return response.results;
+    if (eventId) {
+      const response = await corvaDataAPI.get('/api/v1/data/corva/interventions.timelog.data/', {
+        limit: 500,
+        sort: JSON.stringify({ 'data.start_time': 1 }),
+        query: JSON.stringify({
+          asset_id: assetId,
+          'data.event_id': eventId,
+        }),
+      });
+
+      const results = extractResults(response);
+      if (results.length) {
+        return results;
+      }
     }
 
-    if (Array.isArray(response?.data)) {
-      return response.data;
+    // Fallback: if event_id didn't return data (common on open wells),
+    // fetch latest records by timestamp and use the most recent event_id.
+    const fallbackResponse = await corvaDataAPI.get(
+      '/api/v1/data/corva/interventions.timelog.data/',
+      {
+        limit: 500,
+        sort: JSON.stringify({ timestamp: -1 }),
+        query: JSON.stringify({
+          asset_id: assetId,
+        }),
+      }
+    );
+
+    const fallbackResults = extractResults(fallbackResponse);
+    if (!fallbackResults.length) return [];
+
+    let latestEventId = null;
+    for (const item of fallbackResults) {
+      const currentEventId = item?.data?.event_id;
+      if (currentEventId) {
+        latestEventId = currentEventId;
+        break;
+      }
     }
 
-    return Array.isArray(response) ? response : [];
+    if (!latestEventId) {
+      return fallbackResults;
+    }
+
+    const filtered = fallbackResults.filter((item) => item?.data?.event_id === latestEventId);
+    return filtered.length ? filtered : fallbackResults;
   } catch (error) {
     console.error('Error fetching timelog data:', error);
     throw error;
@@ -886,7 +921,6 @@ export async function getWellComments({ assetId, startTime, endTime }) {
   }
 
   const DVA_APP_KEY = 'ypf.days_vs_activity.ui';
-  const allowedMainTypes = new Set(['operativo', 'observations', 'observaciones']);
 
   const toDate = (value) => {
     if (!value) return null;
@@ -919,6 +953,7 @@ export async function getWellComments({ assetId, startTime, endTime }) {
       assets: [assetId],
       type: ['post'],
       segment: 'drilling',
+      app_id: 4777,
     });
 
     const responseData = unwrapCorvaResponse(response);
@@ -949,9 +984,8 @@ export async function getWellComments({ assetId, startTime, endTime }) {
       if (post?.app_key !== DVA_APP_KEY) return false;
       if (post?.asset_id && Number(post.asset_id) !== Number(assetId)) return false;
 
-      const mainType = post?.data?.mainType;
-      if (typeof mainType !== 'string') return false;
-      return allowedMainTypes.has(mainType.toLowerCase());
+      // Match days-vs-activity behavior: no filtering by mainType
+      return true;
     });
 
     const normalized = filtered.map((activity, index) => {
@@ -990,13 +1024,27 @@ export async function getWellComments({ assetId, startTime, endTime }) {
       };
     });
 
-    const filteredByTime =
-      startTime && endTime
-        ? normalized.filter((item) => {
-            if (!item.timeSeconds) return false;
-            return item.timeSeconds >= startTime && item.timeSeconds <= endTime;
-          })
-        : normalized;
+    const hasTimeFilter = startTime != null && endTime != null;
+    const filteredByTime = hasTimeFilter
+      ? normalized.filter((item) => {
+          if (!item.timeSeconds) return false;
+          return item.timeSeconds >= startTime && item.timeSeconds <= endTime;
+        })
+      : normalized;
+
+    // If a time window was provided but it filters out everything, fall back to returning
+    // the available comments. This avoids false "No hay comentarios" when the selected
+    // intervention range doesn't match DvA post timestamps.
+    if (hasTimeFilter && filteredByTime.length === 0 && normalized.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn('[Comments] Time filter returned 0 items; falling back to unfiltered list', {
+        assetId,
+        startTime,
+        endTime,
+        total: normalized.length,
+      });
+      return normalized.map(({ timeSeconds, ...rest }) => rest);
+    }
 
     return filteredByTime.map(({ timeSeconds, ...rest }) => rest);
   } catch (error) {
