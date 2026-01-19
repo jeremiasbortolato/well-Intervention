@@ -26,6 +26,7 @@ import {
   getTNPByOpSubcode,
   getOperationalLostTime,
   getWellComments,
+  getTraceComments,
   getPerformanceComparisonData,
 } from './api/intervention';
 import {
@@ -139,7 +140,6 @@ function App() {
   const [isLoadingOperationalLostTime, setIsLoadingOperationalLostTime] = useState(false);
   const [performanceData, setPerformanceData] = useState([]);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
-  const [commentsData, setCommentsData] = useState([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   useEffect(() => {
@@ -545,10 +545,14 @@ function App() {
     };
   }, [assetId, selectedInterventionId, selectedEvent, timelogData]);
 
+  // Raw comments data from API
+  const [rawCommentsData, setRawCommentsData] = useState([]);
+  const [rawTraceComments, setRawTraceComments] = useState([]);
+
   // Load Comments data
   useEffect(() => {
     if (!assetId) {
-      setCommentsData([]);
+      setRawCommentsData([]);
       return;
     }
 
@@ -557,24 +561,54 @@ function App() {
     const loadComments = async () => {
       setIsLoadingComments(true);
       try {
-        // No filter comments by time window - show all comments for the asset
-        // This matches the behavior of days-vs-activity app
+        // Fetch all comments for the asset
         const data = await getWellComments({ assetId });
 
         if (isMounted) {
-          setCommentsData(data);
+          setRawCommentsData(data);
           setIsLoadingComments(false);
         }
       } catch (error) {
         console.error('Error loading comments:', error);
         if (isMounted) {
-          setCommentsData([]);
+          setRawCommentsData([]);
           setIsLoadingComments(false);
         }
       }
     };
 
     loadComments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId]);
+
+  // Load Trace Comments data (traces_memo from tracing app)
+  useEffect(() => {
+    if (!assetId) {
+      setRawTraceComments([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadTraceComments = async () => {
+      try {
+        const data = await getTraceComments({ assetId });
+
+        if (isMounted) {
+          setRawTraceComments(data);
+        }
+      } catch (error) {
+        console.error('Error loading trace comments:', error);
+        if (isMounted) {
+          setRawTraceComments([]);
+        }
+      }
+    };
+
+    loadTraceComments();
 
     return () => {
       isMounted = false;
@@ -1189,6 +1223,59 @@ function App() {
     activeWellDetails?.settings?.spud_release,
     activeWellDetails?.area,
     timelogData,
+  ]);
+
+  // Filter comments to only show those with stepNumber that exists in the current plan
+  // and that are within Fecha Inicio / Fecha Fin from Información Básica
+  const commentsData = useMemo(() => {
+    const allComments = [...rawCommentsData, ...rawTraceComments];
+    if (allComments.length === 0) {
+      return [];
+    }
+
+    const { plan } = interventionCurveData;
+    if (!Array.isArray(plan) || plan.length === 0) {
+      // If no plan data, don't show any comments (matching days-vs-activity)
+      return [];
+    }
+
+    // Create a Set of valid step numbers from the plan
+    const validStepNumbers = new Set(plan.map(p => p.stepNumber));
+
+    const tz =
+      well?.settings?.timezone || activeWellDetails?.settings?.timezone || moment.tz.guess();
+
+    const parseBasicInfoDate = (dateStr) => {
+      if (!dateStr || dateStr === '-') return null;
+      const parsed = moment.tz(dateStr, 'DD/MM/YYYY HH:mm', tz);
+      return parsed.isValid() ? parsed.unix() : null;
+    };
+
+    const fechaInicioItem = basicInfoItems.find(item => item.label === 'Fecha Inicio');
+    const fechaFinItem = basicInfoItems.find(item => item.label === 'Fecha Fin');
+    const startTime = fechaInicioItem ? parseBasicInfoDate(fechaInicioItem.value) : null;
+    const endTime = fechaFinItem ? parseBasicInfoDate(fechaFinItem.value) : null;
+
+    return allComments.filter(comment => {
+      const stepNumber = comment.stepNumber;
+      if (stepNumber == null || !validStepNumbers.has(stepNumber)) {
+        return false;
+      }
+
+      if (startTime != null && endTime != null) {
+        if (comment.timeSeconds == null) return false;
+        return comment.timeSeconds >= startTime && comment.timeSeconds <= endTime;
+      }
+
+      return true;
+    });
+  }, [
+    rawCommentsData,
+    rawTraceComments,
+    interventionCurveData,
+    basicInfoItems,
+    well?.settings?.timezone,
+    activeWellDetails?.settings?.timezone,
   ]);
 
   return (
