@@ -545,11 +545,10 @@ function App() {
     };
   }, [assetId, selectedInterventionId, selectedEvent, timelogData]);
 
-  // Raw comments data from API
+  // Raw comments data from API (includes both posts and traces_memo)
   const [rawCommentsData, setRawCommentsData] = useState([]);
-  const [rawTraceComments, setRawTraceComments] = useState([]);
 
-  // Load Comments data
+  // Load Comments data (posts and traces_memo)
   useEffect(() => {
     if (!assetId) {
       setRawCommentsData([]);
@@ -561,7 +560,7 @@ function App() {
     const loadComments = async () => {
       setIsLoadingComments(true);
       try {
-        // Fetch all comments for the asset
+        // Fetch all comments for the asset (posts and traces_memo)
         const data = await getWellComments({ assetId });
 
         if (isMounted) {
@@ -578,37 +577,6 @@ function App() {
     };
 
     loadComments();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [assetId]);
-
-  // Load Trace Comments data (traces_memo from tracing app)
-  useEffect(() => {
-    if (!assetId) {
-      setRawTraceComments([]);
-      return;
-    }
-
-    let isMounted = true;
-
-    const loadTraceComments = async () => {
-      try {
-        const data = await getTraceComments({ assetId });
-
-        if (isMounted) {
-          setRawTraceComments(data);
-        }
-      } catch (error) {
-        console.error('Error loading trace comments:', error);
-        if (isMounted) {
-          setRawTraceComments([]);
-        }
-      }
-    };
-
-    loadTraceComments();
 
     return () => {
       isMounted = false;
@@ -929,6 +897,12 @@ function App() {
 
   // Calculate Intervention Curve Chart data (Curva Plana)
   const interventionCurveData = useMemo(() => {
+    // Helper to normalize timestamp to unix seconds
+    const normalizeUnixSeconds = (value) => {
+      if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+      return value > 1e11 ? Math.floor(value / 1000) : Math.floor(value);
+    };
+
     // Build real series from timelogData grouped by step_no
     const realByStep = {};
     const allStepNos = new Set();
@@ -937,11 +911,27 @@ function App() {
       const stepNo = rec?.data?.step_no;
       if (stepNo === undefined || stepNo === null) return;
       const duration = rec?.data?.duration || 0;
+      const startTime = normalizeUnixSeconds(rec?.data?.start_time);
+      const endTime = normalizeUnixSeconds(rec?.data?.end_time);
+      
       allStepNos.add(stepNo);
       if (!realByStep[stepNo]) {
-        realByStep[stepNo] = { hours: 0, desc: rec?.data?.description || '' };
+        realByStep[stepNo] = { 
+          hours: 0, 
+          desc: rec?.data?.description || '',
+          minTimestamp: startTime,
+          maxEndTimestamp: endTime
+        };
+      } else {
+        realByStep[stepNo].hours += duration;
+        // Track min start_time and max end_time for this step
+        if (startTime != null && (realByStep[stepNo].minTimestamp == null || startTime < realByStep[stepNo].minTimestamp)) {
+          realByStep[stepNo].minTimestamp = startTime;
+        }
+        if (endTime != null && (realByStep[stepNo].maxEndTimestamp == null || endTime > realByStep[stepNo].maxEndTimestamp)) {
+          realByStep[stepNo].maxEndTimestamp = endTime;
+        }
       }
-      realByStep[stepNo].hours += duration;
     });
 
     // Build NPT by step
@@ -960,6 +950,8 @@ function App() {
         stepNumber: Number(stepNo),
         hours: data.hours,
         desc: data.desc,
+        timestamp: data.minTimestamp,
+        endTimestamp: data.maxEndTimestamp,
       }))
       .sort((a, b) => a.stepNumber - b.stepNumber);
 
@@ -971,6 +963,8 @@ function App() {
         duration: realAccum,
         hours: step.hours,
         desc: step.desc,
+        timestamp: step.timestamp,
+        endTimestamp: step.endTimestamp,
       };
     });
 
@@ -1226,14 +1220,13 @@ function App() {
   ]);
 
   // Filter comments to only show those with stepNumber that exists in the current plan
-  // and that are within Fecha Inicio / Fecha Fin from Información Básica
+  // For traces_memo without stepNumber, calculate it based on timestamp
   const commentsData = useMemo(() => {
-    const allComments = [...rawCommentsData, ...rawTraceComments];
-    if (allComments.length === 0) {
+    if (rawCommentsData.length === 0) {
       return [];
     }
 
-    const { plan } = interventionCurveData;
+    const { plan, real } = interventionCurveData;
     if (!Array.isArray(plan) || plan.length === 0) {
       // If no plan data, don't show any comments (matching days-vs-activity)
       return [];
@@ -1256,7 +1249,53 @@ function App() {
     const startTime = fechaInicioItem ? parseBasicInfoDate(fechaInicioItem.value) : null;
     const endTime = fechaFinItem ? parseBasicInfoDate(fechaFinItem.value) : null;
 
-    return allComments.filter(comment => {
+    // Helper function to find stepNumber from timestamp for traces_memo
+    const findStepNumberFromTimestamp = (commentTimestamp) => {
+      if (!commentTimestamp || !Array.isArray(real) || real.length === 0) return null;
+
+      // Find the record in real where timestamp <= commentTimestamp <= endTimestamp
+      const matchingRecord = real.find(
+        (record) =>
+          record.timestamp !== null &&
+          record.endTimestamp !== null &&
+          record.timestamp <= commentTimestamp &&
+          record.endTimestamp >= commentTimestamp
+      );
+
+      return matchingRecord ? matchingRecord.stepNumber : null;
+    };
+
+    // Process comments and assign stepNumber to traces_memo if needed
+    const processedComments = rawCommentsData.map(comment => {
+      // If comment already has a stepNumber, use it
+      if (comment.stepNumber != null) {
+        return comment;
+      }
+
+      // If it's a traces_memo without stepNumber, calculate it from timestamp
+      if (comment.activityType === 'traces_memo' && comment.timeSeconds != null) {
+        const calculatedStepNumber = findStepNumberFromTimestamp(comment.timeSeconds);
+        console.log('[Comments] Calculated stepNumber for traces_memo:', {
+          id: comment.id,
+          timestamp: comment.timeSeconds,
+          calculatedStepNumber,
+          comment: comment.comment?.substring(0, 50)
+        });
+        return {
+          ...comment,
+          stepNumber: calculatedStepNumber,
+        };
+      }
+
+      return comment;
+    });
+
+    console.log('[Comments] Total raw comments:', rawCommentsData.length);
+    console.log('[Comments] Processed comments:', processedComments.length);
+    console.log('[Comments] Valid step numbers in plan:', Array.from(validStepNumbers).sort((a, b) => a - b));
+
+    // Filter comments
+    return processedComments.filter(comment => {
       const stepNumber = comment.stepNumber;
       if (stepNumber == null || !validStepNumbers.has(stepNumber)) {
         return false;
@@ -1271,7 +1310,6 @@ function App() {
     });
   }, [
     rawCommentsData,
-    rawTraceComments,
     interventionCurveData,
     basicInfoItems,
     well?.settings?.timezone,

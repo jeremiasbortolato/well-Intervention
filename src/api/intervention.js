@@ -1050,7 +1050,7 @@ export async function getWellComments({ assetId, startTime, endTime }) {
       page: 0,
       per_page: 10000,
       assets: [assetId],
-      type: ['post'],
+      type: ['post', 'traces_memo'],
       segment: 'drilling',
       app_id: 4777,
     });
@@ -1074,45 +1074,80 @@ export async function getWellComments({ assetId, startTime, endTime }) {
       const attributes = activity?.attributes;
       const activityType = attributes?.type;
 
-      if (activityType !== 'post') {
-        return false;
+      // Handle "post" type activities
+      if (activityType === 'post') {
+        const post = attributes?.context?.post;
+        if (!post) return false;
+        if (post?.app_key !== DVA_APP_KEY) return false;
+        if (post?.asset_id && Number(post.asset_id) !== Number(assetId)) return false;
+        return true;
       }
 
-      const post = attributes?.context?.post;
-      if (!post) return false;
-      if (post?.app_key !== DVA_APP_KEY) return false;
-      if (post?.asset_id && Number(post.asset_id) !== Number(assetId)) return false;
+      // Handle "traces_memo" type activities
+      if (activityType === 'traces_memo') {
+        const tracesMemo = attributes?.context?.traces_memo;
+        if (!tracesMemo) return false;
+        
+        // For traces_memo, verify the well id from relationships
+        const wellId = activity?.relationships?.well?.data?.id;
+        if (wellId && Number(wellId) !== Number(assetId)) return false;
+        
+        return true;
+      }
 
-      // Match days-vs-activity behavior: no filtering by mainType
-      return true;
+      return false;
     });
 
     const normalized = filtered.map((activity, index) => {
       const attributes = activity?.attributes || {};
-      const post = attributes?.context?.post;
+      const activityType = attributes?.type;
       const userId = activity?.relationships?.user?.data?.id;
       const user = userId ? usersMap[userId] : null;
       const firstName = user?.attributes?.first_name || '';
       const lastName = user?.attributes?.last_name || '';
       const name = `${firstName} ${lastName}`.trim() || 'Sin usuario';
 
-      const commentBody = post?.body || '';
-      const stepNumber = post?.data?.stepNumber ?? null;
-
-      const rawTimestamp =
-        post?.timestamp || post?.data?.timestamp || attributes?.created_at;
-      const time = toDate(rawTimestamp);
-      const timeSeconds = toUnixSeconds(time);
-
+      let commentBody = '';
+      let stepNumber = null;
+      let rawTimestamp = null;
       const attachments = [];
-      const attachment = post?.attachment;
-      if (attachment) {
-        const url = attachment.signed_url || attachment.url;
-        const name = attachment.file_name || attachment.name || 'Adjunto';
-        if (url || name) {
-          attachments.push({ url, name });
+
+      // Handle "post" type
+      if (activityType === 'post') {
+        const post = attributes?.context?.post;
+        commentBody = post?.body || '';
+        stepNumber = post?.data?.stepNumber ?? null;
+        rawTimestamp = post?.timestamp || post?.data?.timestamp || attributes?.created_at;
+        
+        const attachment = post?.attachment;
+        if (attachment) {
+          const url = attachment.signed_url || attachment.url;
+          const attachmentName = attachment.file_name || attachment.name || 'Adjunto';
+          if (url || attachmentName) {
+            attachments.push({ url, name: attachmentName });
+          }
         }
       }
+      
+      // Handle "traces_memo" type
+      if (activityType === 'traces_memo') {
+        const tracesMemo = attributes?.context?.traces_memo;
+        commentBody = tracesMemo?.body || '';
+        stepNumber = tracesMemo?.stepNumber ?? null;
+        rawTimestamp = tracesMemo?.timestamp || attributes?.created_at;
+        
+        const attachment = tracesMemo?.attachment;
+        if (attachment) {
+          const url = attachment.signed_url || attachment.url;
+          const attachmentName = attachment.file_name || attachment.name || 'Adjunto';
+          if (url || attachmentName) {
+            attachments.push({ url, name: attachmentName });
+          }
+        }
+      }
+
+      const time = toDate(rawTimestamp);
+      const timeSeconds = toUnixSeconds(time);
 
       return {
         id: String(activity?.id ?? attributes?.id ?? index),
@@ -1122,6 +1157,7 @@ export async function getWellComments({ assetId, startTime, endTime }) {
         attachments,
         timeSeconds,
         stepNumber,
+        activityType, // Include activity type for reference
       };
     });
 
