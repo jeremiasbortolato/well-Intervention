@@ -171,9 +171,13 @@ function App() {
           // integration_id is used as event_id in the datasets (e.g., "E2Efu")
           const integrationId = attributes?.integration_id || event?.integration_id;
 
+          // Use integration_id if available, otherwise use the event id as fallback
+          // This helps with active wells that don't have integration_id set yet
+          const eventIdValue = integrationId || event?.id || attributes?.id;
+          
           return {
             id: String(event?.id ?? attributes?.id ?? index),
-            integrationId: String(integrationId ?? ''),
+            integrationId: String(eventIdValue ?? ''),
             operation: attributes?.operation || event?.operation || 'Sin datos',
             wellId: String(wellRelationshipId ?? fallbackWellId ?? ''),
             raw: event,
@@ -1155,7 +1159,7 @@ function App() {
         minStart = firstStepData.minStart;
       }
       
-      // Get maxEnd from all steps
+    // Get maxEnd from all steps
       for (const stepData of stepMap.values()) {
         if (stepData.maxEnd != null) {
           maxEnd = maxEnd == null ? stepData.maxEnd : Math.max(maxEnd, stepData.maxEnd);
@@ -1163,7 +1167,46 @@ function App() {
       }
     }
 
-    //if minStart is null, get the most recent spud release
+  // Use the latest timelog record timestamp as a fallback or to extend maxEnd
+  if (Array.isArray(timelogData) && timelogData.length) {
+    const lastTimelogTimestamp = timelogData.reduce((acc, row) => {
+      const ts =
+        parseToUnixSeconds(row?.timestamp) ??
+        parseToUnixSeconds(row?.data?.timestamp) ??
+        parseToUnixSeconds(row?.data?.event_last_update) ??
+        parseToUnixSeconds(row?.data?.activity_last_update);
+      if (ts == null) return acc;
+      return acc == null ? ts : Math.max(acc, ts);
+    }, null);
+
+    if (lastTimelogTimestamp != null) {
+      maxEnd = maxEnd == null ? lastTimelogTimestamp : Math.max(maxEnd, lastTimelogTimestamp);
+    }
+  }
+
+    // If minStart is still null, try well.stats (for active wells without timelog data)
+    if (minStart == null) {
+      const wellStats = well?.stats || activeWellDetails?.raw?.attributes?.stats;
+      if (wellStats) {
+        const wellStart = normalizeUnixSeconds(wellStats.well_start || wellStats.first_active_at);
+        if (wellStart != null) {
+          minStart = wellStart;
+        }
+      }
+    }
+
+    // If maxEnd is still null, try well.stats (for active wells)
+    if (maxEnd == null) {
+      const wellStats = well?.stats || activeWellDetails?.raw?.attributes?.stats;
+      if (wellStats) {
+        const wellEnd = normalizeUnixSeconds(wellStats.well_end || wellStats.last_active_at);
+        if (wellEnd != null) {
+          maxEnd = wellEnd;
+        }
+      }
+    }
+
+    //if minStart is still null, get the most recent spud release
     if (minStart == null) {
       const spudRelease = well?.settings?.spud_release || activeWellDetails?.settings?.spud_release;
       if (Array.isArray(spudRelease) && spudRelease.length) {
@@ -1293,20 +1336,31 @@ function App() {
     console.log('[Comments] Total raw comments:', rawCommentsData.length);
     console.log('[Comments] Processed comments:', processedComments.length);
     console.log('[Comments] Valid step numbers in plan:', Array.from(validStepNumbers).sort((a, b) => a - b));
+    console.log('[Comments] Date range for filtering:', { startTime, endTime });
 
     // Filter comments
     return processedComments.filter(comment => {
       const stepNumber = comment.stepNumber;
-      if (stepNumber == null || !validStepNumbers.has(stepNumber)) {
-        return false;
+      
+      // If we have plan data, filter by valid step numbers
+      if (validStepNumbers.size > 0) {
+        if (stepNumber == null || !validStepNumbers.has(stepNumber)) {
+          return false;
+        }
       }
 
-      if (startTime != null && endTime != null) {
-        if (comment.timeSeconds == null) return false;
+      // If we have date range, filter by date
+      if (startTime != null && endTime != null && comment.timeSeconds != null) {
         return comment.timeSeconds >= startTime && comment.timeSeconds <= endTime;
       }
 
-      return true;
+      // If no date range but we have stepNumber validation, accept it
+      if (validStepNumbers.size > 0 && stepNumber != null && validStepNumbers.has(stepNumber)) {
+        return true;
+      }
+
+      // For active wells without complete data, show all comments with valid structure
+      return comment.comment && comment.comment.trim().length > 0;
     });
   }, [
     rawCommentsData,
