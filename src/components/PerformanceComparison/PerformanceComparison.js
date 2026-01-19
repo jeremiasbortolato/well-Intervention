@@ -15,7 +15,7 @@ function PerformanceComparison({ title, rows, height }) {
             <TableRow className={styles.headerRow}>
               <TableCell className={styles.headerCell}>Categoría</TableCell>
               <TableCell className={styles.headerCell}>Operación</TableCell>
-              <TableCell className={styles.headerCell}>Valor Real (u/h)</TableCell>
+              <TableCell className={styles.headerCell}>Valor Reportado (u/h)</TableCell>
               <TableCell className={styles.headerCell}>Objetivo (CO) (u/h)</TableCell>
               <TableCell className={styles.headerCell}>Diferencia</TableCell>
             </TableRow>

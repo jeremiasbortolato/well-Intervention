@@ -1135,31 +1135,81 @@ export async function getWellComments({ assetId, startTime, endTime }) {
 }
 
 /**
- * Mapping of sub-operation codes to their categories and descriptions.
+ * Grouping of sub-operation codes that share the same goals.
  * Based on reference table provided.
  */
-const TRIPPING_CODE_MAP = {
-  '251A': { category: 'Varilla', description: 'Saca v/b en simple' },
-  '251B': { category: 'Varilla', description: 'Saca v/b en dobles' },
-  '251C': { category: 'Varilla', description: 'Saca v/b en simple' },
-  '251D': { category: 'Varilla', description: 'Saca v/b en dobles' },
-  '253A': { category: 'Tubing', description: 'Saca TBG en simple' },
-  '253B': { category: 'Tubing', description: 'Saca TBG en dobles' },
-  '253C': { category: 'Tubing', description: 'Saca TBG en simple' },
-  '253D': { category: 'Tubing', description: 'Saca TBG en dobles' },
-  '253M': { category: 'Tubing', description: 'Saca TBG en simple sunchos' },
-  '253T': { category: 'Tubing', description: 'Saca TBG en dobles sunchos' },
-  '257S': { category: 'Tubing', description: 'Baja TBG en dobles sunchos' },
-  '257M': { category: 'Tubing', description: 'Baja TBG en simple sunchos' },
-  '257D': { category: 'Tubing', description: 'Baja TBG en dobles' },
-  '257C': { category: 'Tubing', description: 'Baja TBG en simple' },
-  '257B': { category: 'Tubing', description: 'Baja TBG en dobles' },
-  '257A': { category: 'Tubing', description: 'Baja TBG en simple' },
-  '255D': { category: 'Varilla', description: 'Baja v/b en dobles' },
-  '255C': { category: 'Varilla', description: 'Baja v/b en simple' },
-  '255B': { category: 'Varilla', description: 'Baja v/b en dobles' },
-  '255A': { category: 'Varilla', description: 'Baja v/b en simple' },
+const TRIPPING_CODE_GROUPS = {
+  SACA_VB_SIMPLE: {
+    category: 'Varilla',
+    description: 'Saca v/b en simple',
+    codes: ['251A', '251C'],
+  },
+  SACA_VB_DOBLES: {
+    category: 'Varilla',
+    description: 'Saca v/b en dobles',
+    codes: ['251B', '251D'],
+  },
+  BAJA_VB_SIMPLE: {
+    category: 'Varilla',
+    description: 'Baja v/b en simple',
+    codes: ['255A', '255C'],
+  },
+  BAJA_VB_DOBLES: {
+    category: 'Varilla',
+    description: 'Baja v/b en dobles',
+    codes: ['255B', '255D'],
+  },
+  SACA_TBG_SIMPLE: {
+    category: 'Tubing',
+    description: 'Saca TBG en simple',
+    codes: ['253A', '253C'],
+  },
+  SACA_TBG_DOBLES: {
+    category: 'Tubing',
+    description: 'Saca TBG en dobles',
+    codes: ['253B', '253D'],
+  },
+  SACA_TBG_SIMPLE_SUNCHOS: {
+    category: 'Tubing',
+    description: 'Saca TBG en simple sunchos',
+    codes: ['253M'],
+  },
+  SACA_TBG_DOBLES_SUNCHOS: {
+    category: 'Tubing',
+    description: 'Saca TBG en dobles sunchos',
+    codes: ['253T'],
+  },
+  BAJA_TBG_SIMPLE: {
+    category: 'Tubing',
+    description: 'Baja TBG en simple',
+    codes: ['257A', '257C'],
+  },
+  BAJA_TBG_DOBLES: {
+    category: 'Tubing',
+    description: 'Baja TBG en dobles',
+    codes: ['257B', '257D'],
+  },
+  BAJA_TBG_DOBLES_SUNCHOS: {
+    category: 'Tubing',
+    description: 'Baja TBG en dobles sunchos',
+    codes: ['257S'],
+  },
+  BAJA_TBG_SIMPLE_SUNCHOS: {
+    category: 'Tubing',
+    description: 'Baja TBG en simple sunchos',
+    codes: ['257M'],
+  },
 };
+
+const TRIPPING_CODE_TO_GROUP = Object.entries(TRIPPING_CODE_GROUPS).reduce(
+  (acc, [groupKey, group]) => {
+    group.codes.forEach((code) => {
+      acc[code] = groupKey;
+    });
+    return acc;
+  },
+  {}
+);
 
 /**
  * Fetches tripping speed goals from ypf#interventions.tripping-speed-goals collection.
@@ -1228,12 +1278,12 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
     console.log('[Performance] Total timelog records:', timelogs.length);
     console.log('[Performance] Total goals:', goals.length);
 
-    // Get all tripping codes from the constant
-    const trippingCodes = Object.keys(TRIPPING_CODE_MAP);
+    // Get all tripping codes from the grouping lookup
+    const trippingCodes = Object.keys(TRIPPING_CODE_TO_GROUP);
     console.log('[Performance] Looking for tripping codes:', trippingCodes);
 
-    // Group timelog data by op_subcode
-    const groupedByCode = {};
+    // Group timelog data by grouped operation (shared goal)
+    const groupedByGroup = {};
     let skippedNoCode = 0;
     let skippedNotTripping = 0;
     let skippedNoCantidad = 0;
@@ -1266,15 +1316,21 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
         return;
       }
 
-      if (!groupedByCode[opSubcode]) {
-        groupedByCode[opSubcode] = {
+      const groupKey = TRIPPING_CODE_TO_GROUP[opSubcode];
+      if (!groupKey) {
+        skippedNotTripping++;
+        return;
+      }
+
+      if (!groupedByGroup[groupKey]) {
+        groupedByGroup[groupKey] = {
           totalDuration: 0,
           totalCantidad: 0,
         };
       }
 
-      groupedByCode[opSubcode].totalDuration += duration;
-      groupedByCode[opSubcode].totalCantidad += cantidadUni;
+      groupedByGroup[groupKey].totalDuration += duration;
+      groupedByGroup[groupKey].totalCantidad += cantidadUni;
       processedCount++;
     });
     
@@ -1283,9 +1339,9 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
     console.log('[Performance] Skipped - no code:', skippedNoCode);
     console.log('[Performance] Skipped - not tripping code:', skippedNotTripping);
     console.log('[Performance] Skipped - no cantidad_uni:', skippedNoCantidad);
-    console.log('[Performance] Grouped codes:', Object.keys(groupedByCode));
+    console.log('[Performance] Grouped operations:', Object.keys(groupedByGroup));
 
-    // Build goals map from tripping-speed-goals
+    // Build goals map from tripping-speed-goals (grouped by shared goal)
     const goalsMap = {};
     goals.forEach((goal) => {
       const goalData = goal?.data;
@@ -1294,12 +1350,22 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
       // The field names in the API response
       const code = goalData.sub_operation_code || goalData.code;
       const cantidad = goalData['cantidad (units/hour)'] || goalData.cantidad;
-      const description = goalData.description;
+      const groupKey = TRIPPING_CODE_TO_GROUP[code];
 
-      if (code && cantidad != null) {
-        goalsMap[code] = {
-          goal: Number(cantidad),
-          description: description || TRIPPING_CODE_MAP[code]?.description || '',
+      if (code && cantidad != null && groupKey) {
+        const normalizedGoal = Number(cantidad);
+        if (goalsMap[groupKey] && goalsMap[groupKey].goal !== normalizedGoal) {
+          console.warn(
+            '[Performance] Mismatched goals for grouped codes:',
+            groupKey,
+            goalsMap[groupKey].goal,
+            normalizedGoal
+          );
+        }
+        goalsMap[groupKey] = {
+          goal: normalizedGoal,
+          description: TRIPPING_CODE_GROUPS[groupKey]?.description || code,
+          category: TRIPPING_CODE_GROUPS[groupKey]?.category || 'Otro',
         };
       }
     });
@@ -1310,7 +1376,7 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
     // Calculate performance for each used code
     const performanceRows = [];
 
-    Object.entries(groupedByCode).forEach(([code, data]) => {
+    Object.entries(groupedByGroup).forEach(([groupKey, data]) => {
       const { totalDuration, totalCantidad } = data;
       
       // Skip if no duration or cantidad
@@ -1322,7 +1388,7 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
       const valorReal = totalCantidad / totalDuration;
 
       // Get goal (Objetivo)
-      const goalData = goalsMap[code];
+      const goalData = goalsMap[groupKey];
       const objetivo = goalData?.goal;
 
       // Skip if no goal available for this code
@@ -1351,9 +1417,8 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
       const differenceStr = `${diferencia < 0 ? '+' : '-'} ${Math.abs(diferencia).toFixed(1)} (${Math.abs(porcentaje).toFixed(1)}%)`;
 
       // Get category and description from mapping
-      const codeInfo = TRIPPING_CODE_MAP[code];
-      const category = codeInfo?.category || 'Otro';
-      const operation = goalData?.description || codeInfo?.description || code;
+      const category = goalData?.category || TRIPPING_CODE_GROUPS[groupKey]?.category || 'Otro';
+      const operation = goalData?.description || TRIPPING_CODE_GROUPS[groupKey]?.description || groupKey;
 
       performanceRows.push({
         category,
@@ -1362,7 +1427,7 @@ export async function getPerformanceComparisonData({ assetId, eventId, companyId
         target: Number(objetivo.toFixed(1)),
         difference: differenceStr,
         differenceState,
-        code, // Keep for sorting
+        code: groupKey, // Keep for sorting
       });
     });
 
