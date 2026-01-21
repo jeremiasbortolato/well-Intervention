@@ -2,3 +2,21 @@
   width: 240px;
   max-width: 100%;
 }
+
+.optionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.optionPrimary {
+  font-weight: 600;
+}
+
+.optionSecondary {
+  color: #9aa0a6;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}

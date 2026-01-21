@@ -170,6 +170,11 @@ function App() {
           const fallbackWellId = attributes?.well_id || event?.well_id;
           // integration_id is used as event_id in the datasets (e.g., "E2Efu")
           const integrationId = attributes?.integration_id || event?.integration_id;
+          const endAt =
+            attributes?.last_active_at ||
+            attributes?.updated_at ||
+            attributes?.release_at ||
+            null;
 
           // Use integration_id if available, otherwise use the event id as fallback
           // This helps with active wells that don't have integration_id set yet
@@ -180,6 +185,7 @@ function App() {
             integrationId: String(eventIdValue ?? ''),
             operation: attributes?.operation || event?.operation || 'Sin datos',
             wellId: String(wellRelationshipId ?? fallbackWellId ?? ''),
+            endAt,
             raw: event,
           };
         });
@@ -290,13 +296,28 @@ function App() {
   }, [interventionEvents, well?.id]);
 
   const interventionOptions = useMemo(() => {
+    const tz =
+      well?.settings?.timezone || activeWellDetails?.settings?.timezone || moment.tz.guess();
+
+    const formatEndDate = (value) => {
+      if (!value) return null;
+      const formatted = moment.tz(value, tz);
+      return formatted.isValid() ? formatted.format('MMM DD YYYY') : null;
+    };
+
     const options = eventsForWell.map(event => ({
       label: getInterventionDisplayName(event.operation),
       value: event.id,
+      secondaryLabel: formatEndDate(event.endAt),
     }));
 
     return options.length ? options : INTERVENTION_OPTIONS;
-  }, [eventsForWell, getInterventionDisplayName]);
+  }, [
+    eventsForWell,
+    getInterventionDisplayName,
+    well?.settings?.timezone,
+    activeWellDetails?.settings?.timezone,
+  ]);
 
   useEffect(() => {
     if (!eventsForWell.length) {
@@ -365,6 +386,30 @@ function App() {
       if (timelogResult.status === 'fulfilled') {
         // eslint-disable-next-line no-console
         console.log('[App] Timelog response:', timelogResult.value);
+        
+        // Calculate min and max timestamps
+        const timelogs = timelogResult.value;
+        if (Array.isArray(timelogs) && timelogs.length > 0) {
+          const timestamps = timelogs
+            .map(rec => rec?.timestamp)
+            .filter(ts => ts != null);
+          
+          if (timestamps.length > 0) {
+            const minTimestamp = Math.min(...timestamps);
+            const maxTimestamp = Math.max(...timestamps);
+            
+            const minDate = moment.unix(minTimestamp).format('YYYY-MM-DD HH:mm:ss');
+            const maxDate = moment.unix(maxTimestamp).format('YYYY-MM-DD HH:mm:ss');
+            
+            // eslint-disable-next-line no-console
+            console.log('[App] Timelog timestamps:', {
+              min: { timestamp: minTimestamp, date: minDate },
+              max: { timestamp: maxTimestamp, date: maxDate },
+              total: timestamps.length
+            });
+          }
+        }
+        
         setTimelogData(timelogResult.value);
       } else {
         console.error('Error fetching timelog:', timelogResult.reason);
