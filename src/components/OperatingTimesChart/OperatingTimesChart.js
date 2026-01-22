@@ -113,11 +113,26 @@ function OperatingTimesChart({ title, planPercent, overPlanPercent, overPlanPerc
               aria-label={`Desvío total ${formatPercent(safeOverPlan)}`}
             />
           ) : null}
+          
+          {/* Plan label overlay */}
+          <div className={styles.planLabel}>
+            Plan: {formatPercent(safePlan)}
+          </div>
+          
+          {/* Desvío total label overlay */}
+          {overPlanPlacement.width > 0 ? (
+            <div className={styles.desvioLabel}>
+              Desvío total: {formatPercent(overPlanPercentLabel !== undefined ? overPlanPercentLabel : safeOverPlan, true)}
+            </div>
+          ) : null}
         </div>
 
         <div className={styles.legend}>
           {legendItems.map((it) => (
-            <div key={it.key || it.label} className={styles.legendItem}>
+            <div 
+              key={it.key || it.label} 
+              className={`${styles.legendItem} ${it.key === 'plan' ? styles.legendItemPlan : ''} ${it.key === 'overPlan' ? styles.legendItemDesvio : ''}`}
+            >
               <span
                 className={styles.legendDot}
                 style={{ background: it.color, opacity: it.dotOpacity ?? 1 }}
