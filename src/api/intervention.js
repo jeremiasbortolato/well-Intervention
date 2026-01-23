@@ -1286,6 +1286,302 @@ export async function fetchTrippingSpeedGoals({ companyId = 375 }) {
 }
 
 /**
+ * Gets wind status data for intervention operations.
+ * Fetches data from ypf#intervention_wind_status dataset.
+ * 
+ * Calculates total hours in each wind status category:
+ * - GOOD: Good wind conditions (safe for operations)
+ * - CAUTION: Caution wind conditions (moderate risk)
+ * - DANGER: Danger wind conditions (high risk)
+ *
+ * @async
+ * @param {Object} params
+ * @param {number} params.assetId - Asset ID
+ * @returns {Promise<{goodHours: number, cautionHours: number, dangerHours: number, totalHours: number}>}
+ */
+export async function getWindStatusData({ assetId }) {
+  if (!assetId) {
+    return {
+      goodHours: 0,
+      cautionHours: 0,
+      dangerHours: 0,
+      totalHours: 0,
+    };
+  }
+
+  try {
+    const response = await corvaDataAPI.get('/api/v1/data/ypf/intervention_wind_status/', {
+      limit: 10000,
+      query: JSON.stringify({
+        asset_id: assetId,
+      }),
+      sort: JSON.stringify({ timestamp: 1 }),
+    });
+
+    const records = Array.isArray(response?.results)
+      ? response.results
+      : Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response)
+      ? response
+      : [];
+
+    let goodSeconds = 0;
+    let cautionSeconds = 0;
+    let dangerSeconds = 0;
+
+    console.log('[Wind Status] Total records fetched:', records.length);
+
+    records.forEach((rec) => {
+      const status = rec?.data?.status;
+      
+      // The field 'good_wind_conditions_sustained_for' represents the duration of the current state in seconds
+      // Despite its name, it applies to ALL statuses (GOOD, CAUTION, DANGER)
+      let durationSeconds = rec?.data?.good_wind_conditions_sustained_for;
+      
+      // Fallback: calculate from start_time and end_time if available
+      if (durationSeconds == null) {
+        const startTime = rec?.data?.start_time;
+        const endTime = rec?.data?.end_time;
+        
+        if (startTime != null && endTime != null) {
+          durationSeconds = endTime - startTime;
+        }
+      }
+      
+      // Skip if no valid duration (null, undefined, NaN, or <= 0)
+      if (durationSeconds == null || isNaN(durationSeconds) || durationSeconds <= 0) {
+        return;
+      }
+
+      // Group by status and accumulate duration
+      switch (status) {
+        case 'GOOD':
+          goodSeconds += durationSeconds;
+          break;
+        case 'CAUTION':
+          cautionSeconds += durationSeconds;
+          break;
+        case 'DANGER':
+          dangerSeconds += durationSeconds;
+          break;
+        default:
+          // Unknown status, log and ignore
+          if (status) {
+            console.warn('[Wind Status] Unknown status:', status, 'for record:', rec._id);
+          }
+          break;
+      }
+    });
+
+    console.log('[Wind Status] Records processed successfully');
+
+    // Convert seconds to hours
+    const goodHours = goodSeconds / 3600;
+    const cautionHours = cautionSeconds / 3600;
+    const dangerHours = dangerSeconds / 3600;
+    const totalHours = goodHours + cautionHours + dangerHours;
+
+    console.log('[Wind Status] Calculated totals (seconds):', {
+      goodSeconds,
+      cautionSeconds,
+      dangerSeconds,
+      totalSeconds: goodSeconds + cautionSeconds + dangerSeconds,
+    });
+
+    console.log('[Wind Status] Calculated totals (hours):', {
+      goodHours: goodHours.toFixed(2),
+      cautionHours: cautionHours.toFixed(2),
+      dangerHours: dangerHours.toFixed(2),
+      totalHours: totalHours.toFixed(2),
+    });
+
+    return {
+      goodHours: Number(goodHours.toFixed(2)),
+      cautionHours: Number(cautionHours.toFixed(2)),
+      dangerHours: Number(dangerHours.toFixed(2)),
+      totalHours: Number(totalHours.toFixed(2)),
+    };
+  } catch (error) {
+    console.error('Error getting wind status data:', error);
+    return {
+      goodHours: 0,
+      cautionHours: 0,
+      dangerHours: 0,
+      totalHours: 0,
+    };
+  }
+}
+
+/**
+ * Gets torque monitoring connection data (making connections KPIs).
+ * Fetches data from ypf#intervention.torque_monitor.connections dataset.
+ * 
+ * Calculates:
+ * - Bad connections: count with connection_health "bad" and connection_type "making"
+ * - OK connections: count with connection_health "good" or "average" and connection_type "making"
+ * - Total connections: bad + ok
+ * - Bad connections percentage
+ *
+ * @async
+ * @param {Object} params
+ * @param {number} params.assetId - Asset ID
+ * @returns {Promise<{badConnections: number, okConnections: number, totalConnections: number, badPercentage: number}>}
+ */
+export async function getTorqueConnectionsData({ assetId }) {
+  if (!assetId) {
+    return {
+      badConnections: 0,
+      okConnections: 0,
+      totalConnections: 0,
+      badPercentage: 0,
+    };
+  }
+
+  try {
+    const response = await corvaDataAPI.get('/api/v1/data/ypf/intervention.torque_monitor.connections/', {
+      limit: 10000,
+      query: JSON.stringify({
+        asset_id: assetId,
+        'data.connection_type': 'making',
+      }),
+      sort: JSON.stringify({ timestamp: -1 }),
+    });
+
+    const records = Array.isArray(response?.results)
+      ? response.results
+      : Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response)
+      ? response
+      : [];
+
+    // Count bad connections (excluding "checking" type, but already filtered by "making")
+    const badConnections = records.filter((rec) => {
+      const health = rec?.data?.connection_health;
+      const type = rec?.data?.connection_type;
+      
+      // Already filtered by "making" in query, but double-check to exclude "checking"
+      if (type === 'checking') return false;
+      
+      return health === 'bad';
+    }).length;
+
+    // Count OK connections (good or average, excluding "checking")
+    const okConnections = records.filter((rec) => {
+      const health = rec?.data?.connection_health;
+      const type = rec?.data?.connection_type;
+      
+      // Already filtered by "making" in query, but double-check to exclude "checking"
+      if (type === 'checking') return false;
+      
+      return health === 'good' || health === 'average';
+    }).length;
+
+    const totalConnections = badConnections + okConnections;
+    const badPercentage = totalConnections > 0 ? (badConnections / totalConnections) * 100 : 0;
+
+    return {
+      badConnections,
+      okConnections,
+      totalConnections,
+      badPercentage,
+    };
+  } catch (error) {
+    console.error('Error getting torque connections data:', error);
+    return {
+      badConnections: 0,
+      okConnections: 0,
+      totalConnections: 0,
+      badPercentage: 0,
+    };
+  }
+}
+
+/**
+ * Gets failure identification data for interventions with "Downhole Equipment Failure" operation type.
+ * Fetches all activities from /v2/activities with type: 'post' and filters those that have
+ * isFailure === true in context.post.data matching the asset_id.
+ *
+ * @async
+ * @param {Object} params
+ * @param {number} params.assetId - Asset ID
+ * @returns {Promise<Array<{id: string, failureType: string, comment: string, timestamp: Date|null, userName: string}>>}
+ */
+export async function getFailureIdentificationData({ assetId }) {
+  if (!assetId) {
+    return [];
+  }
+
+  try {
+    const response = await corvaAPI.get('/v2/activities', {
+      page: 0,
+      per_page: 10000,
+      assets: [assetId],
+      type: ['post'],
+      segment: 'drilling',
+    });
+
+    const responseData = unwrapCorvaResponse(response);
+    const activities = Array.isArray(responseData?.data)
+      ? responseData.data
+      : Array.isArray(responseData)
+      ? responseData
+      : [];
+    const included = Array.isArray(responseData?.included) ? responseData.included : [];
+
+    // Create users map for getting user names
+    const usersMap = included.reduce((acc, item) => {
+      if (item?.type === 'user') {
+        acc[item.id] = item;
+      }
+      return acc;
+    }, {});
+
+    // Filter for posts with isFailure === true matching the asset_id
+    const failureActivities = activities.filter((activity) => {
+      const post = activity?.attributes?.context?.post;
+      
+      if (!post) return false;
+      
+      // Filter by asset_id to match the specific asset
+      if (post?.asset_id && Number(post.asset_id) !== Number(assetId)) {
+        return false;
+      }
+
+      // Check if isFailure is true
+      if (post?.data?.isFailure !== true) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Map to structured data
+    return failureActivities.map((activity, index) => {
+      const post = activity?.attributes?.context?.post;
+      const postData = post?.data || {};
+      const userId = activity?.relationships?.user?.data?.id;
+      const user = userId ? usersMap[userId] : null;
+      const firstName = user?.attributes?.first_name || '';
+      const lastName = user?.attributes?.last_name || '';
+      const userName = `${firstName} ${lastName}`.trim() || 'Usuario desconocido';
+
+      return {
+        id: String(activity?.id ?? index),
+        failureType: postData?.failureType || postData?.failureTypeText || 'Tipo de falla no especificado',
+        comment: post?.body || 'Sin comentario',
+        timestamp: post?.timestamp ? new Date(post.timestamp) : null,
+        userName,
+      };
+    });
+  } catch (error) {
+    console.error('Error getting failure identification data:', error);
+    return [];
+  }
+}
+
+/**
  * Calculates performance comparison data for tripping operations vs carta oferta goals.
  * 
  * Uses timelog data to calculate actual performance (Valor Real) in u/h units.

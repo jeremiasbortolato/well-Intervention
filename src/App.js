@@ -28,6 +28,9 @@ import {
   getWellComments,
   getTraceComments,
   getPerformanceComparisonData,
+  getFailureIdentificationData,
+  getTorqueConnectionsData,
+  getWindStatusData,
 } from './api/intervention';
 import {
   INTERVENTION_OPTIONS,
@@ -141,6 +144,12 @@ function App() {
   const [performanceData, setPerformanceData] = useState([]);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [failureIdentifications, setFailureIdentifications] = useState([]);
+  const [isLoadingFailures, setIsLoadingFailures] = useState(false);
+  const [torqueConnections, setTorqueConnections] = useState(null);
+  const [isLoadingTorque, setIsLoadingTorque] = useState(false);
+  const [windStatus, setWindStatus] = useState(null);
+  const [isLoadingWind, setIsLoadingWind] = useState(false);
 
   useEffect(() => {
     if (!well?.id) {
@@ -668,6 +677,110 @@ function App() {
       isMounted = false;
     };
   }, [assetId, eventId, isLoadingPlannedVsActual]);
+
+  // Load Failure Identification data when operation type is "Downhole Equipment Failure"
+  useEffect(() => {
+    // Only fetch if assetId is available and operation is "Downhole Equipment Failure"
+    const operationType = selectedEvent?.operation;
+    if (!assetId || operationType !== 'Downhole Equipment Failure') {
+      setFailureIdentifications([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadFailureIdentifications = async () => {
+      setIsLoadingFailures(true);
+      try {
+        const data = await getFailureIdentificationData({ assetId });
+
+        if (isMounted) {
+          setFailureIdentifications(data);
+          setIsLoadingFailures(false);
+        }
+      } catch (error) {
+        console.error('Error loading failure identification data:', error);
+        if (isMounted) {
+          setFailureIdentifications([]);
+          setIsLoadingFailures(false);
+        }
+      }
+    };
+
+    loadFailureIdentifications();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId, selectedEvent?.operation]);
+
+  // Load Torque Connections data
+  useEffect(() => {
+    if (!assetId) {
+      setTorqueConnections(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadTorqueConnections = async () => {
+      setIsLoadingTorque(true);
+      try {
+        const data = await getTorqueConnectionsData({ assetId });
+
+        if (isMounted) {
+          setTorqueConnections(data);
+          setIsLoadingTorque(false);
+        }
+      } catch (error) {
+        console.error('Error loading torque connections data:', error);
+        if (isMounted) {
+          setTorqueConnections(null);
+          setIsLoadingTorque(false);
+        }
+      }
+    };
+
+    loadTorqueConnections();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId]);
+
+  // Load Wind Status data
+  useEffect(() => {
+    if (!assetId) {
+      setWindStatus(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadWindStatus = async () => {
+      setIsLoadingWind(true);
+      try {
+        const data = await getWindStatusData({ assetId });
+
+        if (isMounted) {
+          setWindStatus(data);
+          setIsLoadingWind(false);
+        }
+      } catch (error) {
+        console.error('Error loading wind status data:', error);
+        if (isMounted) {
+          setWindStatus(null);
+          setIsLoadingWind(false);
+        }
+      }
+    };
+
+    loadWindStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assetId]);
 
   const interventionType = useMemo(() => {
     if (eventsForWell.length) {
@@ -1534,14 +1647,9 @@ function App() {
           <div className={styles.tertiaryLeft}>
             <OperationalSummary
               title="Resumen Operativo de la Intervención"
-              unscrews={OPERATIONAL_SUMMARY.unscrews}
-              dragLevels={OPERATIONAL_SUMMARY.dragLevels}
-              tests={OPERATIONAL_SUMMARY.tests}
-              costTitle="Costo de No Calidad"
-              costs={formattedQualityCosts.costs}
-              postTotalCosts={formattedQualityCosts.postTotalCosts}
-              totalCost={formattedQualityCosts.totalCost}
-              showCostCard={false}
+              failureIdentifications={failureIdentifications}
+              torqueConnections={torqueConnections}
+              windStatus={windStatus}
             />
           </div>
           <div className={styles.tertiaryRight}>

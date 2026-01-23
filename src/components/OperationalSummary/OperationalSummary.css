@@ -1,63 +1,19 @@
 .card {
   width: 100%;
+  min-height: 400px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-y: auto;
 }
 
 .title {
   color: #ffffff;
   font-size: 16px;
   line-height: 20px;
-}
-
-.topRows {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.label {
-  color: #bdbdbd;
-  font-size: 14px;
-  line-height: 16px;
-}
-
-.chipGroup {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.tests {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.testRow {
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #ffffff;
 }
 
 .costCard {
@@ -104,4 +60,162 @@
   color: #ffffff;
   font-size: 16px;
   line-height: 24px;
+}
+
+.emptyState {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 200px;
+  background: #333;
+  border-radius: 8px;
+}
+
+.emptyStateText {
+  color: #bdbdbd;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.failureSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 67, 54, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 67, 54, 0.2);
+}
+
+.sectionTitle {
+  color: #ff938b;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.failureList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.failureItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+
+.failureHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.failureUser {
+  color: #bdbdbd;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.failureTime {
+  color: #757575;
+  font-size: 12px;
+  line-height: 16px;
+  margin-left: auto;
+}
+
+.failureComment {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 20px;
+  padding: 4px 0;
+}
+
+.torqueSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(33, 150, 243, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.torqueContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.torqueLabel {
+  color: #90caf9;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.torqueData {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.windSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 188, 212, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 188, 212, 0.2);
+}
+
+.windContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.windRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.windLabel {
+  color: #4dd0e1;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.windRowTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 4px 0;
+  margin-top: 4px;
+  border-top: 1px solid rgba(0, 188, 212, 0.2);
+}
+
+.windLabelTotal {
+  color: #4dd0e1;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.windTotal {
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
 }
