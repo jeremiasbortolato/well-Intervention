@@ -31,6 +31,7 @@ function OperatingTimesChart({ title, planPercent, overPlanPercent, overPlanPerc
   }
 
   const safePlan = clampPercent(planPercent);
+  const planLabelPercent = 100;
   const safeOverPlan = clampPercent(overPlanPercent);
   const safeItems = (items || [])
     .map((it) => ({
@@ -57,7 +58,7 @@ function OperatingTimesChart({ title, planPercent, overPlanPercent, overPlanPerc
     {
       key: 'plan',
       label: 'Plan:',
-      percent: safePlan,
+      percent: planLabelPercent,
       color: 'var(--white-w24, rgba(255, 255, 255, 0.24))',
       dotOpacity: 0.4,
       skipClamp: false,
@@ -116,7 +117,7 @@ function OperatingTimesChart({ title, planPercent, overPlanPercent, overPlanPerc
           
           {/* Plan label overlay */}
           <div className={styles.planLabel}>
-            Plan: {formatPercent(safePlan)}
+            Plan: {formatPercent(planLabelPercent)}
           </div>
           
           {/* Desvío total label overlay */}
