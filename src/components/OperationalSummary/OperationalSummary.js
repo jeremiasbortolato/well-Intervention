@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Chip } from '@corva/ui/componentsV2';
+import { Chip, EmptyState } from '@corva/ui/componentsV2';
 
 import styles from './OperationalSummary.css';
 
@@ -41,6 +41,11 @@ function OperationalSummary({
   torqueConnections,
   windStatus,
 }) {
+  const formatWindPercent = (hours, totalHours) => {
+    if (!totalHours) return '0.0';
+    return ((hours / totalHours) * 100).toFixed(1);
+  };
+
   // Check if there's any data to display
   const hasData =
     (failureIdentifications && failureIdentifications.length > 0) ||
@@ -53,7 +58,7 @@ function OperationalSummary({
 
       {!hasData ? (
         <div className={styles.emptyState}>
-          <span className={styles.emptyStateText}>No hay datos para mostrar</span>
+          <EmptyState title="No Hay Datos Para Mostrar" />
         </div>
       ) : (
         <>
@@ -111,19 +116,22 @@ function OperationalSummary({
                 <div className={styles.windRow}>
                   <span className={styles.windLabel}>Buenas Condiciones:</span>
                   <Chip size="small" state="success" shape="square">
-                    {windStatus.goodHours.toFixed(1)} hs
+                    {windStatus.goodHours.toFixed(1)} hs (
+                    {formatWindPercent(windStatus.goodHours, windStatus.totalHours)}%)
                   </Chip>
                 </div>
                 <div className={styles.windRow}>
                   <span className={styles.windLabel}>Precaución:</span>
                   <Chip size="small" state="caution" shape="square">
-                    {windStatus.cautionHours.toFixed(1)} hs
+                    {windStatus.cautionHours.toFixed(1)} hs (
+                    {formatWindPercent(windStatus.cautionHours, windStatus.totalHours)}%)
                   </Chip>
                 </div>
                 <div className={styles.windRow}>
                   <span className={styles.windLabel}>Peligro:</span>
                   <Chip size="small" state="error" shape="square">
-                    {windStatus.dangerHours.toFixed(1)} hs
+                    {windStatus.dangerHours.toFixed(1)} hs (
+                    {formatWindPercent(windStatus.dangerHours, windStatus.totalHours)}%)
                   </Chip>
                 </div>
                 <div className={styles.windRowTotal}>
