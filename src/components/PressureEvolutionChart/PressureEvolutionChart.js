@@ -67,10 +67,14 @@ const PressureEvolutionChart = ({ selectedTest, plotData }) => {
         },
         axisLabel: {
           color: '#ccc',
-          fontSize: 11,
+          fontSize: 10,
+          rotate: 0,
+          interval: 'auto',
           formatter: value => {
             const date = new Date(value);
-            return date.toLocaleTimeString();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
           },
         },
         axisLine: {

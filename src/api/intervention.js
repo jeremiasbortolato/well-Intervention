@@ -1582,6 +1582,45 @@ export async function getFailureIdentificationData({ assetId }) {
 }
 
 /**
+ * Fetches pressure test progress records marked for final report.
+ * Returns all records with include_on_final_report: true for the given asset.
+ *
+ * @async
+ * @param {Object} params
+ * @param {number} params.assetId - Asset ID
+ * @returns {Promise<any[]>} Array of pressure test progress records
+ */
+export async function fetchFinalReportPressureTests({ assetId }) {
+  if (!assetId) {
+    return [];
+  }
+
+  try {
+    const response = await corvaDataAPI.get('/api/v1/data/ypf/interventions.pressure_test_progress/', {
+      limit: 100,
+      sort: JSON.stringify({ timestamp: -1 }),
+      query: JSON.stringify({
+        asset_id: assetId,
+        'data.include_on_final_report': true,
+      }),
+    });
+
+    if (Array.isArray(response?.results)) {
+      return response.results;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    return Array.isArray(response) ? response : [];
+  } catch (error) {
+    console.error('Error fetching final report pressure tests:', error);
+    return [];
+  }
+}
+
+/**
  * Calculates performance comparison data for tripping operations vs carta oferta goals.
  * 
  * Uses timelog data to calculate actual performance (Valor Real) in u/h units.

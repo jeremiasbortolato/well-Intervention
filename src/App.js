@@ -14,6 +14,7 @@ import { NonQualityCostCard } from './components/OperationalSummary/OperationalS
 import PerformanceComparison from './components/PerformanceComparison/PerformanceComparison';
 import InterventionCurveChart from './components/InterventionCurveChart';
 import PressureTestsSection from './components/PressureTestsSection/PressureTestsSection';
+import FinalReportTestsSection from './components/FinalReportTestsSection/FinalReportTestsSection';
 import Comments from './components/Comments/Comments';
 import {
   fetchInterventionUnitEvents,
@@ -1664,6 +1665,13 @@ function App() {
           <PressureTestsSection
             assetId={assetId}
             title="Pressure Tests - Último Test Guardado"
+          />
+        </div>
+
+        <div className={styles.pressureTestsRow}>
+          <FinalReportTestsSection
+            assetId={assetId}
+            title="Tests de Presión - Reporte Final"
           />
         </div>
 
