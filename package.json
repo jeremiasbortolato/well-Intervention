@@ -1,6 +1,6 @@
 {
   "name": "ypf_well_intervention_dashboard_ui",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "This is the description of my app. You can do great things with it!",
   "main": "src/index.js",
   "private": true,

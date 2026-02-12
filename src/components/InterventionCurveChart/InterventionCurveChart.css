@@ -24,6 +24,13 @@
   line-height: 20px;
 }
 
+.metricsRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .metricsContainer {
   display: flex;
   justify-content: flex-end;
@@ -151,6 +158,11 @@
     align-items: flex-start;
   }
   
+  .metricsRow {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
   .metricsContainer {
     justify-content: flex-start;
     width: 100%;

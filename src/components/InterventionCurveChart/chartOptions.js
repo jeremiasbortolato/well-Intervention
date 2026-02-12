@@ -6,7 +6,7 @@
 const defaultHighchartsOptions = {
   title: undefined,
   chart: {
-    backgroundColor: '#201f1f',
+    backgroundColor: 'rgba(255, 255, 255, 0.0)',
     type: 'line',
     inverted: true,
     height: null,

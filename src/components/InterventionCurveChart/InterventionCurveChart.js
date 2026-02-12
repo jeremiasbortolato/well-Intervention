@@ -127,77 +127,78 @@ function InterventionCurveChart({
       <div className={styles.header}>
         <div className={styles.title}>{title}</div>
 
-        <div className={styles.metricsContainer}>
-          <div className={styles.metricsGroup}>
-            {/* NPT Total */}
-            <div className={styles.metricItem}>
-              <span className={styles.metricLabel}>NPT Total</span>
-              <span className={styles.metricValue}>{formatMetricValue(nptTotal)}</span>
-              <span className={styles.metricUnit}>hrs</span>
-            </div>
+        {/* View Toggle Buttons */}
+        <div className={styles.toggleContainer}>
+          <button
+            type="button"
+            className={`${styles.toggleButton} ${
+              viewMode === 'chart' ? styles.toggleButtonActive : ''
+            }`}
+            onClick={() => setViewMode('chart')}
+            aria-label="Vista de gráfico"
+          >
+            <svg
+              className={styles.toggleIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M3 3v18h18" />
+              <path d="M7 16l4-4 4 4 5-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={`${styles.toggleButton} ${
+              viewMode === 'table' ? styles.toggleButtonActive : ''
+            }`}
+            onClick={() => setViewMode('table')}
+            aria-label="Vista de tabla"
+          >
+            <svg
+              className={styles.toggleIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="3" y1="15" x2="21" y2="15" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+              <line x1="15" y1="3" x2="15" y2="21" />
+            </svg>
+          </button>
+        </div>
+      </div>
 
-            <div className={styles.separator} />
-
-            {/* Desvío Operativo */}
-            <div className={styles.metricItem}>
-              <span className={styles.metricLabel}>Desvio Operativo</span>
-              <span className={styles.metricValue}>{formatMetricValue(desvioOperativo)}</span>
-              <span className={styles.metricUnit}>%</span>
-            </div>
-
-            <div className={styles.separator} />
-
-            {/* Desvío Proyectado */}
-            <div className={styles.metricItem}>
-              <span className={styles.metricLabel}>Desvio Proyectado</span>
-              <span className={styles.metricValue}>{formatMetricValue(desvioProyectado)}</span>
-              <span className={styles.metricUnit}>%</span>
-            </div>
+      {/* Metrics row below header */}
+      <div className={styles.metricsRow}>
+        <div className={styles.metricsGroup}>
+          {/* NPT Total */}
+          <div className={styles.metricItem}>
+            <span className={styles.metricLabel}>NPT Total</span>
+            <span className={styles.metricValue}>{formatMetricValue(nptTotal)}</span>
+            <span className={styles.metricUnit}>hrs</span>
           </div>
 
-          {/* View Toggle Buttons */}
-          <div className={styles.toggleContainer}>
-            <button
-              type="button"
-              className={`${styles.toggleButton} ${
-                viewMode === 'chart' ? styles.toggleButtonActive : ''
-              }`}
-              onClick={() => setViewMode('chart')}
-              aria-label="Vista de gráfico"
-            >
-              <svg
-                className={styles.toggleIcon}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M3 3v18h18" />
-                <path d="M7 16l4-4 4 4 5-6" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className={`${styles.toggleButton} ${
-                viewMode === 'table' ? styles.toggleButtonActive : ''
-              }`}
-              onClick={() => setViewMode('table')}
-              aria-label="Vista de tabla"
-            >
-              <svg
-                className={styles.toggleIcon}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <line x1="3" y1="9" x2="21" y2="9" />
-                <line x1="3" y1="15" x2="21" y2="15" />
-                <line x1="9" y1="3" x2="9" y2="21" />
-                <line x1="15" y1="3" x2="15" y2="21" />
-              </svg>
-            </button>
+          <div className={styles.separator} />
+
+          {/* Desvío Operativo */}
+          <div className={styles.metricItem}>
+            <span className={styles.metricLabel}>Desvio Operativo</span>
+            <span className={styles.metricValue}>{formatMetricValue(desvioOperativo)}</span>
+            <span className={styles.metricUnit}>%</span>
+          </div>
+
+          <div className={styles.separator} />
+
+          {/* Desvío Proyectado */}
+          <div className={styles.metricItem}>
+            <span className={styles.metricLabel}>Desvio Proyectado</span>
+            <span className={styles.metricValue}>{formatMetricValue(desvioProyectado)}</span>
+            <span className={styles.metricUnit}>%</span>
           </div>
         </div>
       </div>
