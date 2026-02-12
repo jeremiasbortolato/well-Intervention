@@ -8,28 +8,26 @@ export function NonQualityCostCard({ costTitle, costs, totalCost, postTotalCosts
   return (
     <div className={styles.costCard}>
       <div className={styles.costTitle}>{costTitle}</div>
-      <div className={styles.costList}>
+      <div className={styles.costBlocksRow}>
         {costs.map((item) => (
-          <div className={styles.costRow} key={item.label}>
-            <span className={styles.label}>{item.label}</span>
-            <span className={styles.costValue}>{item.value}</span>
+          <div className={styles.costBlock} key={item.label}>
+            <span className={styles.costBlockLabel}>{item.label}</span>
+            <span className={styles.costBlockValue}>{item.value}</span>
           </div>
         ))}
-      </div>
-      <div className={styles.costRowTotal}>
-        <span className={styles.totalLabel}>Total:</span>
-        <span className={styles.totalValue}>{totalCost}</span>
-      </div>
-      {Array.isArray(postTotalCosts) && postTotalCosts.length ? (
-        <div className={styles.costList}>
-          {postTotalCosts.map((item) => (
-            <div className={styles.costRow} key={item.label}>
-              <span className={styles.label}>{item.label}</span>
-              <span className={styles.costValue}>{item.value}</span>
-            </div>
-          ))}
+        <div className={styles.costBlockTotal}>
+          <span className={styles.costBlockTotalLabel}>Total:</span>
+          <span className={styles.costBlockTotalValue}>{totalCost}</span>
         </div>
-      ) : null}
+        {Array.isArray(postTotalCosts) && postTotalCosts.length
+          ? postTotalCosts.map((item) => (
+              <div className={styles.costBlock} key={item.label}>
+                <span className={styles.costBlockLabel}>{item.label}</span>
+                <span className={styles.costBlockValue}>{item.value}</span>
+              </div>
+            ))
+          : null}
+      </div>
     </div>
   );
 }
