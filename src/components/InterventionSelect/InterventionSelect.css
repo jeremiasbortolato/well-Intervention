@@ -1,6 +1,43 @@
 .wrapper {
   width: 240px;
   max-width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.wrapper :global(.MuiFormControl-root) {
+  margin: 0;
+}
+
+.wrapper :global(.MuiInputBase-root) {
+  min-height: 36px;
+  border-radius: 8px;
+  background: var(--white-w8, rgba(255, 255, 255, 0.08));
+  backdrop-filter: blur(2px);
+}
+
+.wrapper :global(.MuiInput-underline:before),
+.wrapper :global(.MuiInput-underline:after),
+.wrapper :global(.MuiFilledInput-underline:before),
+.wrapper :global(.MuiFilledInput-underline:after) {
+  display: none;
+}
+
+.wrapper :global(.MuiSelect-select) {
+  padding: 8px 36px 8px 14px;
+  color: var(--text-button-label-white-default, #bdbdbd);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-text-button-large-size, 16px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--styles-text-button-medium-line-height, 20px);
+  letter-spacing: var(--styles-text-button-large-letter-spacing, 0);
+  text-transform: capitalize;
+}
+
+.wrapper :global(.MuiSvgIcon-root.MuiSelect-icon) {
+  right: 10px;
+  color: #c6c9cf;
 }
 
 .optionRow {

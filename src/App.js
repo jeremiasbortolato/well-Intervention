@@ -1530,17 +1530,24 @@ function App() {
   ]);
 
   return (
-    <AppContainer header={<AppHeader />} testId={appKey}>
+    <AppContainer
+      header={
+        <AppHeader
+          titleControls={
+            <InterventionSelect
+              label="Tipo de intervención"
+              value={selectedInterventionId}
+              options={interventionOptions}
+              onChange={setSelectedInterventionId}
+            />
+          }
+          titleControlsPosition="left"
+          disableSettings
+        />
+      }
+      testId={appKey}
+    >
       <div className={styles.page}>
-        <div className={styles.topRow}>
-          <InterventionSelect
-            label="Tipo de intervención"
-            value={selectedInterventionId}
-            options={interventionOptions}
-            onChange={setSelectedInterventionId}
-          />
-        </div>
-
         <BasicInformation
           title="Información Básica"
           // badgeText="Objetivo Final Cumplido"

@@ -15,11 +15,6 @@
   overflow-y: auto;
 }
 
-.topRow {
-  display: flex;
-  justify-content: flex-start;
-}
-
 .metricsRow {
   display: flex;
   gap: 12px;
