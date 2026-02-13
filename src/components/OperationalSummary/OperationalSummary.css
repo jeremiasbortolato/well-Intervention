@@ -1,21 +1,23 @@
 .card {
   width: 100%;
-  min-height: 400px;
-  height: 100%;
   padding: 12px;
   background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
-  flex: 1 1 auto;
 }
 
 .title {
   color: #ffffff;
   font-size: 16px;
   line-height: 20px;
+}
+
+.sectionsRow {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
 }
 
 .costCard {
@@ -111,36 +113,37 @@
 
 .emptyState {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  flex: 1;
-  min-height: 200px;
-  background: transparent;
-}
-
-.emptyStateText {
-  color: #bdbdbd;
-  font-size: 14px;
-  line-height: 20px;
+  justify-content: center;
+  height: 400px;
+  color: #ccc;
 }
 
 .failureSection {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 67, 54, 0.04);
+  background: var(--white-w4, rgba(255, 255, 255, 0.04));
   border-radius: 8px;
-  border: 1px solid rgba(255, 67, 54, 0.2);
 }
 
-.sectionTitle {
-  color: #ff938b;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.failureSectionTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  color: var(--text-primary, #FFF);
+  text-overflow: ellipsis;
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
 }
 
 .failureList {
@@ -171,28 +174,50 @@
   line-height: 16px;
 }
 
-.failureTime {
-  color: #757575;
-  font-size: 12px;
-  line-height: 16px;
-  margin-left: auto;
+.failureBottom {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .failureComment {
   color: #ffffff;
   font-size: 14px;
   line-height: 20px;
-  padding: 4px 0;
+}
+
+.failureTime {
+  color: #757575;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .torqueSection {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: rgba(33, 150, 243, 0.04);
+  background: var(--white-w4, rgba(255, 255, 255, 0.04));
   border-radius: 8px;
-  border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.torqueSectionTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  color: var(--text-primary, #FFF);
+  text-overflow: ellipsis;
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
 }
 
 .torqueContent {
@@ -202,26 +227,49 @@
 }
 
 .torqueLabel {
-  color: #90caf9;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 500;
+  color: var(--text-secondary, #BDBDBD);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
 }
 
 .torqueData {
-  color: #ffffff;
-  font-size: 14px;
-  line-height: 20px;
+  color: var(--text-primary, #FFF);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
 }
 
 .windSection {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  background: rgba(0, 188, 212, 0.04);
+  background: var(--white-w4, rgba(255, 255, 255, 0.04));
   border-radius: 8px;
-  border: 1px solid rgba(0, 188, 212, 0.2);
+}
+
+.windSectionTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  color: var(--text-primary, #FFF);
+  text-overflow: ellipsis;
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
 }
 
 .windContent {
@@ -238,9 +286,43 @@
 }
 
 .windLabel {
-  color: #4dd0e1;
-  font-size: 14px;
-  line-height: 20px;
+  color: var(--text-secondary, #BDBDBD);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
+}
+
+.windValueSuccess {
+  color: var(--icon-success-light, #88DA8B);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
+}
+
+.windValueCaution {
+  color: var(--icon-warning-light, #FFD54F);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
+}
+
+.windValueDanger {
+  color: var(--icon-danger-light, #F56565);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
 }
 
 .windRowTotal {
@@ -249,14 +331,17 @@
   align-items: center;
   padding: 8px 0 4px 0;
   margin-top: 4px;
-  border-top: 1px solid rgba(0, 188, 212, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .windLabelTotal {
-  color: #4dd0e1;
-  font-size: 14px;
-  line-height: 20px;
+  color: var(--text-secondary, #BDBDBD);
+  font-family: var(--font-font-family, Roboto);
+  font-size: var(--styles-body-text-regular-medium-size, 14px);
+  font-style: normal;
   font-weight: 600;
+  line-height: var(--styles-body-text-regular-medium-line-height, 20px);
+  letter-spacing: var(--styles-body-text-regular-medium-letter-spacing, 0);
 }
 
 .windTotal {

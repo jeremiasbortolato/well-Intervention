@@ -1634,6 +1634,16 @@ function App() {
           </div>
         </div>
 
+        {/* Resumen Operativo de la Intervención */}
+        <div className={styles.operationalSummaryRow}>
+          <OperationalSummary
+            title="Resumen Operativo de la Intervención"
+            failureIdentifications={failureIdentifications}
+            torqueConnections={torqueConnections}
+            windStatus={windStatus}
+          />
+        </div>
+
         {/* Curva Plana de la Intervención */}
         <div className={styles.curveChartRow}>
           <InterventionCurveChart
@@ -1651,21 +1661,12 @@ function App() {
           />
         </div>
 
-        <div className={styles.tertiaryRow}>
-          <div className={styles.tertiaryLeft}>
-            <OperationalSummary
-              title="Resumen Operativo de la Intervención"
-              failureIdentifications={failureIdentifications}
-              torqueConnections={torqueConnections}
-              windStatus={windStatus}
-            />
-          </div>
-          <div className={styles.tertiaryRight}>
-            <PerformanceComparison
-              title="Comparación de Performance vs Carta Oferta"
-              rows={performanceData.length > 0 ? performanceData : PERFORMANCE_ROWS}
-            />
-          </div>
+        {/* Comparación de Performance vs Carta Oferta */}
+        <div className={styles.performanceComparisonRow}>
+          <PerformanceComparison
+            title="Comparación de Performance vs Carta Oferta"
+            rows={performanceData.length > 0 ? performanceData : PERFORMANCE_ROWS}
+          />
         </div>
 
         <div className={styles.pressureTestsRow}>

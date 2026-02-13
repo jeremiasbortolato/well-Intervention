@@ -56,14 +56,18 @@ function OperationalSummary({
 
       {!hasData ? (
         <div className={styles.emptyState}>
-          <EmptyState title="No Hay Datos Para Mostrar" />
+          <EmptyState
+            title="Sin Datos Disponibles"
+            subTitle="No hay datos operativos para esta intervención"
+            image="noDataAvailable"
+          />
         </div>
       ) : (
-        <>
+        <div className={styles.sectionsRow}>
           {/* Tipo de Falla Identificada Section */}
           {failureIdentifications && failureIdentifications.length > 0 ? (
             <div className={styles.failureSection}>
-              <div className={styles.sectionTitle}>Tipo de Falla Identificada</div>
+              <div className={styles.failureSectionTitle}>Tipo de Falla Identificada</div>
               <div className={styles.failureList}>
                 {failureIdentifications.map((failure) => (
                   <div className={styles.failureItem} key={failure.id}>
@@ -72,6 +76,9 @@ function OperationalSummary({
                         {failure.failureType}
                       </Chip>
                       <span className={styles.failureUser}>{failure.userName}</span>
+                    </div>
+                    <div className={styles.failureBottom}>
+                      <div className={styles.failureComment}>{failure.comment}</div>
                       {failure.timestamp && (
                         <span className={styles.failureTime}>
                           {new Date(failure.timestamp).toLocaleString('es-AR', {
@@ -84,7 +91,6 @@ function OperationalSummary({
                         </span>
                       )}
                     </div>
-                    <div className={styles.failureComment}>{failure.comment}</div>
                   </div>
                 ))}
               </div>
@@ -94,7 +100,7 @@ function OperationalSummary({
           {/* Conformance de Torque - Conexiones Armando Section */}
           {torqueConnections && torqueConnections.totalConnections > 0 ? (
             <div className={styles.torqueSection}>
-              <div className={styles.sectionTitle}>Conformance de Torque</div>
+              <div className={styles.torqueSectionTitle}>Conformance de Torque</div>
               <div className={styles.torqueContent}>
                 <span className={styles.torqueLabel}>Conexiones Armando:</span>
                 <span className={styles.torqueData}>
@@ -109,28 +115,25 @@ function OperationalSummary({
           {/* Wind Status Section */}
           {windStatus && windStatus.totalHours > 0 ? (
             <div className={styles.windSection}>
-              <div className={styles.sectionTitle}>Horas de Viento por Umbral de Alerta</div>
+              <div className={styles.windSectionTitle}>Horas de Viento por Umbral de Alerta</div>
               <div className={styles.windContent}>
                 <div className={styles.windRow}>
                   <span className={styles.windLabel}>Buenas Condiciones:</span>
-                  <Chip size="small" state="success" shape="square">
-                    {windStatus.goodHours.toFixed(1)} hs (
-                    {formatWindPercent(windStatus.goodHours, windStatus.totalHours)}%)
-                  </Chip>
+                  <span className={styles.windValueSuccess}>
+                    {windStatus.goodHours.toFixed(1)} hs ({formatWindPercent(windStatus.goodHours, windStatus.totalHours)}%)
+                  </span>
                 </div>
                 <div className={styles.windRow}>
                   <span className={styles.windLabel}>Precaución:</span>
-                  <Chip size="small" state="caution" shape="square">
-                    {windStatus.cautionHours.toFixed(1)} hs (
-                    {formatWindPercent(windStatus.cautionHours, windStatus.totalHours)}%)
-                  </Chip>
+                  <span className={styles.windValueCaution}>
+                    {windStatus.cautionHours.toFixed(1)} hs ({formatWindPercent(windStatus.cautionHours, windStatus.totalHours)}%)
+                  </span>
                 </div>
                 <div className={styles.windRow}>
                   <span className={styles.windLabel}>Peligro:</span>
-                  <Chip size="small" state="error" shape="square">
-                    {windStatus.dangerHours.toFixed(1)} hs (
-                    {formatWindPercent(windStatus.dangerHours, windStatus.totalHours)}%)
-                  </Chip>
+                  <span className={styles.windValueDanger}>
+                    {windStatus.dangerHours.toFixed(1)} hs ({formatWindPercent(windStatus.dangerHours, windStatus.totalHours)}%)
+                  </span>
                 </div>
                 <div className={styles.windRowTotal}>
                   <span className={styles.windLabelTotal}>Total:</span>
@@ -139,7 +142,7 @@ function OperationalSummary({
               </div>
             </div>
           ) : null}
-        </>
+        </div>
       )}
     </div>
   );
