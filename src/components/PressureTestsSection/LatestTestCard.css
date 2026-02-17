@@ -5,26 +5,9 @@
   overflow: hidden;
   background: var(--white-w4, rgba(255, 255, 255, 0.04));
   border-radius: 8px;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-}
-
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.sectionTitle {
-  color: white;
-  font-size: 16px;
-  font-family: 'Roboto', sans-serif;
-  font-weight: 400;
-  line-height: 22px;
-  word-wrap: break-word;
-  margin: 0;
 }
 
 .testCard {
@@ -33,6 +16,9 @@
   padding: 16px;
   border: 1px solid transparent;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .liveCard {
@@ -43,14 +29,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
 }
 
 .testTitle {
   color: white;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 22px;
   word-wrap: break-word;
   margin: 0;
@@ -62,30 +47,47 @@
   gap: 8px;
 }
 
-.testInfo {
-  margin-bottom: 12px;
+/* Chip cards grid (Start / End) */
+.cardsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.testInfo p {
-  margin: 4px 0;
+.chipCard {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 120px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.label {
-  color: #BDBDBD;
-  font-size: 16px;
+.chipLabel {
+  font-size: 11px;
   font-family: 'Roboto', sans-serif;
   font-weight: 400;
-  line-height: 22px;
-  word-wrap: break-word;
+  line-height: 14px;
+  color: #9E9E9E;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-.value {
+.chipValue {
+  font-size: 14px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  line-height: 20px;
   color: white;
-  font-size: 16px;
-  font-family: 'Roboto', sans-serif;
-  font-weight: 400;
-  line-height: 22px;
   word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-
+@media (max-width: 300px) {
+  .chipCard {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+}

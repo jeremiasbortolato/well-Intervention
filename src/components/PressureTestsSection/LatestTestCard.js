@@ -7,14 +7,14 @@ import styles from './LatestTestCard.css';
 
 const formatDateTime = timestampSeconds => {
   if (!timestampSeconds) return '-';
-  return new Date(timestampSeconds * 1000).toLocaleString('es-ES', {
-    year: 'numeric',
-    month: '2-digit',
+  return new Date(timestampSeconds * 1000).toLocaleString('es-AR', {
     day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: true,
+    hour12: false,
   });
 };
 
@@ -28,10 +28,6 @@ const LatestTestCard = ({ test, isLive, kpiData }) => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>Tests</h2>
-      </div>
-
       <div className={`${styles.testCard} ${isLive ? styles.liveCard : ''}`}>
         <div className={styles.cardHeader}>
           <h3 className={styles.testTitle}>{test.data?.name || 'Sin nombre'}</h3>
@@ -40,18 +36,21 @@ const LatestTestCard = ({ test, isLive, kpiData }) => {
           </div>
         </div>
 
-        {showKPIs && <TestKPICard kpiData={kpiData} />}
+        <div className={styles.cardsGrid}>
+          {/* Start */}
+          <div className={styles.chipCard}>
+            <span className={styles.chipLabel}>Start</span>
+            <span className={styles.chipValue}>{startDate}</span>
+          </div>
 
-        <div className={styles.testInfo}>
-          <p>
-            <span className={styles.label}>Start:</span>
-            <span className={styles.value}> {startDate}</span>
-          </p>
-          <p>
-            <span className={styles.label}>End:</span>
-            <span className={styles.value}> {endDate}</span>
-          </p>
+          {/* End */}
+          <div className={styles.chipCard}>
+            <span className={styles.chipLabel}>End</span>
+            <span className={styles.chipValue}>{endDate}</span>
+          </div>
         </div>
+
+        {showKPIs && <TestKPICard kpiData={kpiData} />}
       </div>
     </div>
   );

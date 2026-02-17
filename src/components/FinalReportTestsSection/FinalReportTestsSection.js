@@ -2,10 +2,8 @@ import React, { useMemo } from 'react';
 import { EmptyState } from '@corva/ui/componentsV2';
 
 import PressureEvolutionChart from '../PressureEvolutionChart/PressureEvolutionChart';
-import LatestTestCard from '../PressureTestsSection/LatestTestCard';
+import FinalReportTestCard from './FinalReportTestCard';
 import { useFinalReportTests } from '../../hooks/useFinalReportTests';
-import { useHistoricalData } from '../../hooks/useHistoricalData';
-import { useTestKPIs } from '../../hooks/useTestKPIs';
 
 import styles from './FinalReportTestsSection.css';
 
@@ -24,13 +22,21 @@ const FinalReportTestsSection = ({ assetId, title = 'Tests de Presión - Reporte
     return null;
   }, [selectedTest, tests]);
 
-  const historicalData = useHistoricalData(displayTest, assetId, null);
-  const { kpis: testKPIs } = useTestKPIs(tests, assetId);
+  // Extract sorted events from the test record
+  const eventsFromTest = useMemo(() => {
+    if (!displayTest?.originalData?.runtime?.events) return [];
+    return [...displayTest.originalData.runtime.events].sort((a, b) => a.index - b.index);
+  }, [displayTest]);
 
-  const currentKPIs = useMemo(() => {
-    if (!displayTest || !testKPIs) return null;
-    return testKPIs[displayTest._id];
-  }, [displayTest, testKPIs]);
+  // Build plotData directly from events (each event → 2 data points)
+  const plotDataFromEvents = useMemo(() => {
+    if (!eventsFromTest || eventsFromTest.length === 0) return [];
+    return eventsFromTest.flatMap(event => [
+      { timestamp: event.event_start, pressure: event.pressure_at_start },
+      { timestamp: event.event_end, pressure: event.pressure_at_end },
+    ]);
+  }, [eventsFromTest]);
+
 
   if (loading) {
     return (
@@ -89,18 +95,16 @@ const FinalReportTestsSection = ({ assetId, title = 'Tests de Presión - Reporte
       <div className={styles.contentArea}>
         {/* Test card on the left - 50% */}
         <div className={styles.testCardWrapper}>
-          <LatestTestCard
-            test={displayTest}
-            isLive={false}
-            kpiData={currentKPIs}
-          />
+          <FinalReportTestCard test={displayTest} events={eventsFromTest} />
         </div>
 
         {/* Chart on the right - 50% */}
         <div className={styles.chartWrapper}>
           <PressureEvolutionChart
             selectedTest={displayTest}
-            plotData={historicalData}
+            plotData={plotDataFromEvents}
+            events={eventsFromTest}
+            colorScheme="yellow"
           />
         </div>
       </div>
