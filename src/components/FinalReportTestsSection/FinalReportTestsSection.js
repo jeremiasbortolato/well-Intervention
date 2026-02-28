@@ -12,7 +12,7 @@ import styles from './FinalReportTestsSection.css';
  * Fetches data from ypf#interventions.pressure_test_progress dataset.
  * Shows the test card on the left (50%) and the pressure chart on the right (50%).
  */
-const FinalReportTestsSection = ({ assetId, title = 'Tests de Presión - Reporte Final' }) => {
+const FinalReportTestsSection = ({ assetId, title = 'Pruebas de Presión' }) => {
   const { tests, selectedTest, loading, error } = useFinalReportTests(assetId);
 
   // Display the selected test or the first test available

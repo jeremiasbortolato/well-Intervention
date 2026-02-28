@@ -575,14 +575,8 @@ function App() {
     const loadOperationalLostTime = async () => {
       setIsLoadingOperationalLostTime(true);
       try {
-        const { startTime, endTime } = getInterventionTimeRange({ selectedEvent, timelogData });
-        const params = { assetId, topN: 5 };
-        if (startTime != null && endTime != null) {
-          params.startTime = startTime;
-          params.endTime = endTime;
-        }
-
-        const data = await getOperationalLostTime(params);
+        // No date range filtering - fetch all activities for the asset, matching DvA app behavior
+        const data = await getOperationalLostTime({ assetId, topN: 5 });
 
         if (isMounted) {
           setOperationalLostTime(data);
@@ -602,7 +596,7 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [assetId, selectedInterventionId, selectedEvent, timelogData]);
+  }, [assetId, selectedInterventionId]);
 
   // Raw comments data from API (includes both posts and traces_memo)
   const [rawCommentsData, setRawCommentsData] = useState([]);
@@ -849,7 +843,7 @@ function App() {
 
   // Calculate Planned vs Actual metrics
   const plannedVsActualMetrics = useMemo(() => {
-    // Well Planning Último (report_no from the single well plan record)
+    // Plan de Intervención # (report_no from the single well plan record)
     const lastReportNo = wellPlanData[0]?.data?.report_no ?? '-';
 
     // Tiempo Planificado = estimated_duration (in hours)
@@ -904,7 +898,7 @@ function App() {
 
     return {
       metrics: [
-        { label: 'Well Planing Ultimo', value: lastReportNo },
+        { label: 'Plan de Intervención #', value: lastReportNo },
         { label: 'Tiempo Planificado', value: plannedTimeHours.toFixed(1), unit: 'hs' },
         { label: 'Tiempo Total Real', value: actualTimeHours.toFixed(1), unit: 'hs' },
         { label: 'Tiempo Real s/NPT', value: actualTimeWithoutNpt.toFixed(1), unit: 'hs' },
@@ -961,12 +955,12 @@ function App() {
 
     return [
       {
-        label: 'Gestionable',
+        label: 'NPT Gestionable',
         value: `${Number(gestionable).toFixed(1)} hs`,
         isChip: true,
         numericValue: gestionable,
       },
-      { label: 'No Gestionable', value: Number(noGestionable).toFixed(1), unit: 'hs' },
+      { label: 'NPT No Gestionable', value: Number(noGestionable).toFixed(1), unit: 'hs' },
       { label: 'NPT Total', value: Number(totalNpt).toFixed(1), unit: 'hs' },
       {
         label: 'TNP Total',
@@ -974,7 +968,7 @@ function App() {
         isChip: true,
         numericValue: totalTnp,
       },
-      { label: 'Tiempo Operativo', value: tiempoOperativo.toFixed(1), unit: 'hs' },
+      { label: 'Planificado Efectivo', value: tiempoOperativo.toFixed(1), unit: 'hs' },
     ];
   }, [nptData, timelogData]);
 
@@ -1326,20 +1320,18 @@ function App() {
       }
     }
 
-  // Use the latest timelog record timestamp as a fallback or to extend maxEnd
-  if (Array.isArray(timelogData) && timelogData.length) {
-    const lastTimelogTimestamp = timelogData.reduce((acc, row) => {
-      const ts =
-        parseToUnixSeconds(row?.timestamp) ??
-        parseToUnixSeconds(row?.data?.timestamp) ??
-        parseToUnixSeconds(row?.data?.event_last_update) ??
-        parseToUnixSeconds(row?.data?.activity_last_update);
-      if (ts == null) return acc;
-      return acc == null ? ts : Math.max(acc, ts);
+  // Use the end_time of the last timelog record as Fecha Fin
+  // We only use data.end_time (actual activity end), NOT metadata timestamps
+  // like row.timestamp, event_last_update, or activity_last_update
+  if (maxEnd == null && Array.isArray(timelogData) && timelogData.length) {
+    const lastEndTime = timelogData.reduce((acc, row) => {
+      const end = parseToUnixSeconds(row?.data?.end_time);
+      if (end == null) return acc;
+      return acc == null ? end : Math.max(acc, end);
     }, null);
 
-    if (lastTimelogTimestamp != null) {
-      maxEnd = maxEnd == null ? lastTimelogTimestamp : Math.max(maxEnd, lastTimelogTimestamp);
+    if (lastEndTime != null) {
+      maxEnd = lastEndTime;
     }
   }
 
@@ -1580,7 +1572,7 @@ function App() {
           </div>
           <div className={styles.metricsColumn}>
             <NptClassification
-              title="Clasificación de Tiempos No Productivos"
+              title="Clasificación de Tiempos"
               items={isLoadingPlannedVsActual ? NPT_ITEMS : nptClassificationItems}
               plannedTimeHours={
                 isLoadingPlannedVsActual
@@ -1672,14 +1664,14 @@ function App() {
         <div className={styles.pressureTestsRow}>
           <PressureTestsSection
             assetId={assetId}
-            title="Pressure Tests - Último Test Guardado"
+            title="Prueba de Bomba + PH Final"
           />
         </div>
 
         <div className={styles.pressureTestsRow}>
           <FinalReportTestsSection
             assetId={assetId}
-            title="Tests de Presión - Reporte Final"
+            title="Pruebas de Presión"
           />
         </div>
 

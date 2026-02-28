@@ -24,18 +24,18 @@ export const BASIC_INFO_ITEMS = [
 ];
 
 export const PLANNED_VS_ACTUAL_METRICS = [
-  { label: 'Well Planing Ultimo', value: '1' },
+  { label: 'Plan de Intervención #', value: '1' },
   { label: 'Tiempo Planificado', value: '25', unit: 'días' },
   { label: 'Tiempo Total Real', value: '28.5', unit: 'días' },
 ];
 
 // Default NPT items (used while loading)
 export const NPT_ITEMS = [
-  { label: 'Gestionable', value: '-', isChip: true },
-  { label: 'No Gestionable', value: '-', unit: 'hs' },
+  { label: 'NPT Gestionable', value: '-', isChip: true },
+  { label: 'NPT No Gestionable', value: '-', unit: 'hs' },
   { label: 'NPT Total', value: '-', unit: 'hs' },
   { label: 'TNP Total', value: '-', isChip: true },
-  { label: 'Tiempo Operativo', value: '-', unit: 'hs' },
+  { label: 'Planificado Efectivo', value: '-', unit: 'hs' },
 ];
 
 // NPT consequence codes for classification
