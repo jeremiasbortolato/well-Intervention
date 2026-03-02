@@ -1661,19 +1661,15 @@ function App() {
           />
         </div>
 
-        <div className={styles.pressureTestsRow}>
-          <PressureTestsSection
-            assetId={assetId}
-            title="Prueba de Bomba + PH Final"
-          />
-        </div>
+        <PressureTestsSection
+          assetId={assetId}
+          title="Prueba de Bomba + PH Final"
+        />
 
-        <div className={styles.pressureTestsRow}>
-          <FinalReportTestsSection
-            assetId={assetId}
-            title="Pruebas de Presión"
-          />
-        </div>
+        <FinalReportTestsSection
+          assetId={assetId}
+          title="Pruebas de Presión"
+        />
 
         <div className={styles.commentsRow}>
           <Comments comments={commentsData} isLoading={isLoadingComments} />

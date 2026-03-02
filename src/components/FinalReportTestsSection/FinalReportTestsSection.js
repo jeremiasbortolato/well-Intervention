@@ -69,20 +69,7 @@ const FinalReportTestsSection = ({ assetId, title = 'Pruebas de Presión' }) => 
   }
 
   if (!tests.length) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>{title}</h2>
-        </div>
-        <div className={styles.emptyState}>
-          <EmptyState
-            title="Sin Tests para Reporte"
-            subTitle="No hay tests de presión marcados para incluir en el reporte final"
-            image="noDataAvailable"
-          />
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

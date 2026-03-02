@@ -42,20 +42,7 @@ const PressureTestsSection = ({ assetId, title = 'Pressure Tests' }) => {
   }
 
   if (!tests.length) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>{title}</h2>
-        </div>
-        <div className={styles.emptyState}>
-          <EmptyState
-            title="Sin Tests de Presión"
-            subTitle="No hay tests de presión guardados para este pozo"
-            image="noDataAvailable"
-          />
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
