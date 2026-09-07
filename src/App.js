@@ -49,6 +49,21 @@ import {
 
 import styles from './App.css';
 
+const toFiniteNumber = (value, fallback = 0) => {
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
+const getInterventionTimestamp = value => {
+  if (value == null) return 0;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value < 1e11 ? value * 1000 : value;
+  }
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
 const getInterventionTimeRange = ({ selectedEvent, timelogData }) => {
   const normalizeUnixSeconds = (value) => {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
@@ -182,7 +197,6 @@ function App() {
           const integrationId = attributes?.integration_id || event?.integration_id;
           const endAt =
             attributes?.last_active_at ||
-            attributes?.updated_at ||
             attributes?.release_at ||
             null;
 
@@ -199,9 +213,6 @@ function App() {
             raw: event,
           };
         });
-
-        // eslint-disable-next-line no-console
-        console.log('[App] Loaded intervention events:', normalizedEvents);
 
         setInterventionEvents(normalizedEvents);
 
@@ -310,9 +321,9 @@ function App() {
       well?.settings?.timezone || activeWellDetails?.settings?.timezone || moment.tz.guess();
 
     const formatEndDate = (value) => {
-      if (!value) return null;
+      if (!value) return '-';
       const formatted = moment.tz(value, tz);
-      return formatted.isValid() ? formatted.format('MMM DD YYYY') : null;
+      return formatted.isValid() ? formatted.format('MMM DD YYYY') : '-';
     };
 
     const options = eventsForWell.map(event => ({
@@ -335,10 +346,13 @@ function App() {
       return;
     }
 
-    setSelectedInterventionId(prev => {
-      const exists = eventsForWell.some(event => event.id === prev);
-      return exists ? prev : eventsForWell[0].id;
-    });
+    const latestEvent = eventsForWell.reduce((latest, event) => {
+      return getInterventionTimestamp(event.endAt) > getInterventionTimestamp(latest.endAt)
+        ? event
+        : latest;
+    }, eventsForWell[0]);
+
+    setSelectedInterventionId(latestEvent.id);
   }, [eventsForWell]);
 
   const selectedEvent = useMemo(() => {
@@ -354,12 +368,7 @@ function App() {
 
   // Load Planned vs Actual data when event is selected
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[App] PlannedVsActual check:', { assetId, eventId });
-
     if (!assetId || !eventId) {
-      // eslint-disable-next-line no-console
-      console.log('[App] Missing assetId or eventId, skipping fetch');
       setWellPlanData([]);
       setTimelogData([]);
       setNptData([]);
@@ -370,9 +379,6 @@ function App() {
 
     const loadInterventionData = async () => {
       setIsLoadingPlannedVsActual(true);
-      // eslint-disable-next-line no-console
-      console.log('[App] Fetching intervention data:', { assetId, eventId });
-
       // Use Promise.allSettled to prevent one failure from blocking others
       const [wellPlanResult, timelogResult, nptResult] = await Promise.allSettled([
         fetchWellPlanData({ assetId, eventId }),
@@ -384,8 +390,6 @@ function App() {
 
       // Handle wellPlan
       if (wellPlanResult.status === 'fulfilled') {
-        // eslint-disable-next-line no-console
-        console.log('[App] WellPlan response:', wellPlanResult.value);
         setWellPlanData(wellPlanResult.value);
       } else {
         console.error('Error fetching wellPlan:', wellPlanResult.reason);
@@ -394,32 +398,6 @@ function App() {
 
       // Handle timelog
       if (timelogResult.status === 'fulfilled') {
-        // eslint-disable-next-line no-console
-        console.log('[App] Timelog response:', timelogResult.value);
-        
-        // Calculate min and max timestamps
-        const timelogs = timelogResult.value;
-        if (Array.isArray(timelogs) && timelogs.length > 0) {
-          const timestamps = timelogs
-            .map(rec => rec?.timestamp)
-            .filter(ts => ts != null);
-          
-          if (timestamps.length > 0) {
-            const minTimestamp = Math.min(...timestamps);
-            const maxTimestamp = Math.max(...timestamps);
-            
-            const minDate = moment.unix(minTimestamp).format('YYYY-MM-DD HH:mm:ss');
-            const maxDate = moment.unix(maxTimestamp).format('YYYY-MM-DD HH:mm:ss');
-            
-            // eslint-disable-next-line no-console
-            console.log('[App] Timelog timestamps:', {
-              min: { timestamp: minTimestamp, date: minDate },
-              max: { timestamp: maxTimestamp, date: maxDate },
-              total: timestamps.length
-            });
-          }
-        }
-        
         setTimelogData(timelogResult.value);
       } else {
         console.error('Error fetching timelog:', timelogResult.reason);
@@ -428,8 +406,6 @@ function App() {
 
       // Handle NPT
       if (nptResult.status === 'fulfilled') {
-        // eslint-disable-next-line no-console
-        console.log('[App] NPT response:', nptResult.value);
         setNptData(nptResult.value);
       } else {
         console.error('Error fetching NPT:', nptResult.reason);
@@ -847,11 +823,11 @@ function App() {
     const lastReportNo = wellPlanData[0]?.data?.report_no ?? '-';
 
     // Tiempo Planificado = estimated_duration (in hours)
-    const plannedTimeHours = wellPlanData[0]?.data?.estimated_duration ?? 0;
+    const plannedTimeHours = toFiniteNumber(wellPlanData[0]?.data?.estimated_duration);
 
     // Tiempo Total Real = sum of duration from timelog (in hours)
     const actualTimeHours = timelogData.reduce((sum, record) => {
-      const duration = record?.data?.duration ?? 0;
+      const duration = toFiniteNumber(record?.data?.duration);
       return sum + duration;
     }, 0);
 
@@ -870,7 +846,7 @@ function App() {
       const codeRaw = rec?.data?.npt_consecuencia;
       if (!codeRaw) return;
       const code = String(Number(codeRaw));
-      const duration = rec?.data?.duration || 0;
+      const duration = toFiniteNumber(rec?.data?.duration);
       if (gestionableCodes.has(code)) gestionable += duration;
       if (noGestionableCodes.has(code)) noGestionable += duration;
     });
@@ -927,7 +903,7 @@ function App() {
       const codeRaw = rec?.data?.npt_consecuencia;
       if (!codeRaw) return;
       const code = String(Number(codeRaw));
-      const duration = rec?.data?.duration || 0;
+      const duration = toFiniteNumber(rec?.data?.duration);
       if (gestionableCodes.has(code)) gestionable += duration;
       if (noGestionableCodes.has(code)) noGestionable += duration;
     });
@@ -938,14 +914,14 @@ function App() {
     const totalTnp = timelogData.reduce((sum, record) => {
       const subCode5 = record?.data?.sub_code_5;
       if (subCode5 === 'TNP') {
-        return sum + (record?.data?.duration || 0);
+        return sum + toFiniteNumber(record?.data?.duration);
       }
       return sum;
     }, 0);
 
     // Calculate Tiempo Real s/NPT = Tiempo Total Real - NPT Total
     const actualTimeHours = timelogData.reduce((sum, record) => {
-      const duration = record?.data?.duration ?? 0;
+      const duration = toFiniteNumber(record?.data?.duration);
       return sum + duration;
     }, 0);
     const actualTimeWithoutNpt = Math.max(0, actualTimeHours - totalNpt);
@@ -973,10 +949,10 @@ function App() {
   }, [nptData, timelogData]);
 
   const operatingTimesData = useMemo(() => {
-    const plannedTimeHours = wellPlanData[0]?.data?.estimated_duration ?? 0;
+    const plannedTimeHours = toFiniteNumber(wellPlanData[0]?.data?.estimated_duration);
 
     const actualTimeHours = timelogData.reduce((sum, record) => {
-      const duration = record?.data?.duration ?? 0;
+      const duration = toFiniteNumber(record?.data?.duration);
       return sum + duration;
     }, 0);
 
@@ -984,7 +960,7 @@ function App() {
     const tnpTotal = timelogData.reduce((sum, record) => {
       const subCode5 = record?.data?.sub_code_5;
       if (subCode5 === 'TNP') {
-        return sum + (record?.data?.duration || 0);
+        return sum + toFiniteNumber(record?.data?.duration);
       }
       return sum;
     }, 0);
@@ -1004,7 +980,7 @@ function App() {
       const codeRaw = rec?.data?.npt_consecuencia;
       if (!codeRaw) return;
       const code = String(Number(codeRaw));
-      const duration = rec?.data?.duration || 0;
+      const duration = toFiniteNumber(rec?.data?.duration);
       if (gestionableCodes.has(code)) nptGestionable += duration;
       if (noGestionableCodes.has(code)) nptNoGestionable += duration;
     });
@@ -1150,7 +1126,7 @@ function App() {
       plan = planSteps
         .filter(step => step.step_no !== undefined && step.step_no !== null)
         .map(step => {
-          const hours = step.estimated_duration || step.duration || 0;
+          const hours = toFiniteNumber(step.estimated_duration ?? step.duration);
           planAccum += hours;
           return {
             stepNumber: step.step_no,
@@ -1162,7 +1138,7 @@ function App() {
         .sort((a, b) => a.stepNumber - b.stepNumber);
     } else if (real.length > 0) {
       // Fallback: create plan based on estimated_duration spread across steps
-      const totalEstimated = wellPlanData[0]?.data?.estimated_duration || 0;
+      const totalEstimated = toFiniteNumber(wellPlanData[0]?.data?.estimated_duration);
       const avgHoursPerStep = real.length > 0 ? totalEstimated / real.length : 0;
 
       let planAccum = 0;
@@ -1469,12 +1445,6 @@ function App() {
       // If it's a traces_memo without stepNumber, calculate it from timestamp
       if (comment.activityType === 'traces_memo' && comment.timeSeconds != null) {
         const calculatedStepNumber = findStepNumberFromTimestamp(comment.timeSeconds);
-        console.log('[Comments] Calculated stepNumber for traces_memo:', {
-          id: comment.id,
-          timestamp: comment.timeSeconds,
-          calculatedStepNumber,
-          comment: comment.comment?.substring(0, 50)
-        });
         return {
           ...comment,
           stepNumber: calculatedStepNumber,
@@ -1483,11 +1453,6 @@ function App() {
 
       return comment;
     });
-
-    console.log('[Comments] Total raw comments:', rawCommentsData.length);
-    console.log('[Comments] Processed comments:', processedComments.length);
-    console.log('[Comments] Valid step numbers in plan:', Array.from(validStepNumbers).sort((a, b) => a - b));
-    console.log('[Comments] Date range for filtering:', { startTime, endTime });
 
     // Filter comments
     return processedComments.filter(comment => {
@@ -1577,7 +1542,7 @@ function App() {
               plannedTimeHours={
                 isLoadingPlannedVsActual
                   ? undefined
-                  : wellPlanData[0]?.data?.estimated_duration ?? 0
+                  : toFiniteNumber(wellPlanData[0]?.data?.estimated_duration)
               }
             />
           </div>

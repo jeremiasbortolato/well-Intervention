@@ -6,13 +6,15 @@ import { Select } from '@corva/ui/components';
 import styles from './InterventionSelect.css';
 
 function InterventionSelect({ label, value, options, onChange }) {
+  const selectedOption = options.find(option => String(option.value) === String(value));
+
   return (
     <div className={styles.wrapper}>
       <Select
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        renderValue={() => label}
+        renderValue={() => (selectedOption ? selectedOption.label : label)}
         fullWidth
       >
         {options.map((option) => (
